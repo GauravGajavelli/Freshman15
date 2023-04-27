@@ -76,7 +76,7 @@ def writetoindex(scripts):
     # dinner being written t
     inde = scripts[3].text.find("Bamco.dayparts[")+len("Bamco.dayparts[")+7
     f.write("<div id=\"dinner\" style=\"display:none;\">" +
-            scripts[2].text[inde:-11]+"</div>")
+            scripts[3].text[inde:-11]+"</div>")
 
     # writing second part
     f.write(secondpart)
