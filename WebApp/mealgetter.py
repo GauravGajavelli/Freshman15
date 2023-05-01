@@ -3,48 +3,17 @@ import requests
 from bs4 import BeautifulSoup
 
 
-# testhtml: Tests the new html by writing to meals.html
-
-
-def testhtml(scripts):
-    # Beginning of meals html ("a" for append mode)
-    f = open("public/files/meals.html", "w")
-    # f = open("public/index.html", "a")
-    f.write("<!DOCTYPE html> <html lang=\"en\"> <head ></head> <body >")
-
-    # breakfast being written to
-    inde = scripts[0].text.find("Bamco.dayparts[")+len("Bamco.dayparts[")+7
-    f.write("<div id=\"breakfast\" style=\"display:none;\">" +
-            scripts[0].text[inde:-11]+"</div>")
-    # grabngo being written to
-    inde = scripts[1].text.find("Bamco.dayparts[")+len("Bamco.dayparts[")+7
-    f.write("<div id=\"grabngo\" style=\"display:none;\">" +
-            scripts[1].text[inde:-11]+"</div>")
-    # lunch being written to
-    inde = scripts[2].text.find("Bamco.dayparts[")+len("Bamco.dayparts[")+7
-    f.write("<div id=\"lunch\" style=\"display:none;\">" +
-            scripts[2].text[inde:-11]+"</div>")
-    # dinner being written t
-    inde = scripts[3].text.find("Bamco.dayparts[")+len("Bamco.dayparts[")+7
-    f.write("<div id=\"dinner\" style=\"display:none;\">" +
-            scripts[2].text[inde:-11]+"</div>")
-
-    # End of html
-    f.write("</body></html>")
-    f.close()
-
-# writetoindex: Inserts the file into index.html
-
-
-def writetoindex(scripts):
+def writetoindex(scripts, menuitems):
     # gets file string
-    g = open("public/index.html", "r")
+    g = open("FoodProject\my-app\src\App.js", "r")
     strni = g.read()
     g.close()
 
     # finds start and end
-    start1 = strni.find("<body>")+6
-    start2 = strni.find("<nav")
+    firststr = "function breakfast()"
+    secondstr = "function DONOTDELETE()"
+    start1 = strni.find(firststr)
+    start2 = strni.find(secondstr)
     # print(start1)
     # print(start2)
 
@@ -56,27 +25,32 @@ def writetoindex(scripts):
     # print(secondpart)
 
     # Writing
-    f = open("public/index.html", "w")
+    f = open("FoodProject\my-app\src\App.js", "w")
 
     # writing first part
     f.write(firstpart)
 
     # breakfast being written to
     inde = scripts[0].text.find("Bamco.dayparts[")+len("Bamco.dayparts[")+7
-    f.write("<div id=\"breakfast\" style=\"display:none;\">" +
-            scripts[0].text[inde:-11]+"</div>")
+    f.write("function breakfast() {\n \t return" +
+            scripts[0].text[inde:-11]+".stations;\n}\n\n")
     # grabngo being written to
     inde = scripts[1].text.find("Bamco.dayparts[")+len("Bamco.dayparts[")+7
-    f.write("<div id=\"grabngo\" style=\"display:none;\">" +
-            scripts[1].text[inde:-11]+"</div>")
+    f.write("function grabngo() { \n \t return " +
+            scripts[1].text[inde:-11]+".stations;\n}\n\n")
     # lunch being written to
     inde = scripts[2].text.find("Bamco.dayparts[")+len("Bamco.dayparts[")+7
-    f.write("<div id=\"lunch\" style=\"display:none;\">" +
-            scripts[2].text[inde:-11]+"</div>")
-    # dinner being written t
+    f.write("function lunch() { \n \t return " +
+            scripts[2].text[inde:-11]+".stations;\n}\n\n")
+    # dinner being written to
     inde = scripts[3].text.find("Bamco.dayparts[")+len("Bamco.dayparts[")+7
-    f.write("<div id=\"dinner\" style=\"display:none;\">" +
-            scripts[3].text[inde:-11]+"</div>")
+    f.write("function dinner() { \n \t return " +
+            scripts[3].text[inde:-11]+".stations;\n}\n\n")
+    # menu being written to
+    inde = menuitems.text.find("Bamco.menu_items")+len("Bamco.menu_items")+3
+    indetwo = menuitems.text.find("Bamco.cor_icons")
+    f.write("function menuItems() { \n \t return " +
+            menuitems.text[inde:indetwo-5]+"\n}\n\n")
 
     # writing second part
     f.write(secondpart)
@@ -94,13 +68,15 @@ def main():
 
     # Find all the scripts with Bamco.dayparts in them using regular expressions
     scripts = soup.find_all("script", string=re.compile(r"Bamco\.dayparts"))
+    menuitems = soup.find_all(
+        "script", string=re.compile(r"Bamco\.menu_items"))
 
     # # Print the scripts for comparison to file output
     # for script in scripts:
     #     print(script.text)
 
     # adds invisi-divs to the html to make them easily accessible
-    writetoindex(scripts)
+    writetoindex(scripts, menuitems[0])
 
 
 if __name__ == "__main__":
