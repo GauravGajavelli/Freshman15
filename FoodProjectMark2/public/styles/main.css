@@ -1,0 +1,316 @@
+/* .navbar {
+    background-color: #800000;
+    color: white;
+    padding-bottom: 50px;    
+} */
+
+.page-container {
+    margin-top: 75px;
+}
+
+body {
+    background-color: #800000;
+    margin: 0;
+    font-family: Roboto, Helvetica, Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    /* text-align: center; */
+}
+
+img {
+
+    width: 50%;
+    padding-bottom: 30px;
+    margin: auto;
+    display: block;
+}
+
+#mainPage>p {
+    color: white;
+    font-family: Roboto, Helvetica, Arial, sans-serif;
+    font-size: 1.5rem;
+    padding-bottom: 30px;
+    text-align: center;
+}
+
+.flex-rectangle>p {
+    color: #800000;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+/* .btn{
+    background-color: #B71E3C;
+    margin: 50px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    color: white;
+} */
+.my-row>.btn {
+    display: flex;
+    margin-right: 20px;
+    margin-left: 20px;
+    padding: 30px;
+    width: 25%;
+    background-color: #B71E3C;
+    color: white;
+    justify-content: center;
+}
+
+.flex-rectangle>.btn {
+    display: flex;
+    flex-direction: row;
+    justify-content: right;
+    background-color: #B71E3C;
+    color: white;
+    margin-top: 5%;
+}
+
+.my-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    /* background-color: #B71E3C; */
+}
+
+.flex-rectangle {
+    display: block;
+    width: 100%;
+    background: #ffffff;
+    padding-right: 10%;
+    padding-left: 10%;
+    padding-top: 2%;
+    padding-bottom: 3.5%;
+}
+
+/* .flex-rectangle{
+    
+    background-color: white;
+} */
+/* .bmd-label-floating{
+    color: white;
+    text-align: left;
+} */
+
+.form-group {
+    color: white;
+}
+
+#submitButton {
+    display: flex;
+    flex-direction: row;
+    justify-content: right;
+    background-color: #B71E3C;
+    color: white;
+    margin-top: 5%;
+}
+
+#submitSignupButton {
+    background-color: #800000;
+    /* padding-top: 1.75rem; 
+    padding-right: 4rem;    */
+    color: white;
+}
+
+.required:after {
+    content: " *";
+    color: red;
+}
+
+#newEventButton {
+    background-color: #ffffff;
+    color: #800000;
+}
+
+#deleteEventButton {
+    background: white;
+    color: #800000;
+}
+
+#newEventButton {
+    background-color: white;
+    position: fixed;
+    right: 20px;
+    bottom: 10px;
+    z-index: 999;
+}
+
+.material-icons {
+    color: #800000;
+}
+
+.smallText {
+    font-size: 0.8em;
+    margin-top: 1em;
+    margin-bottom: 1em;
+}
+
+/* .row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+#pad{
+    margin-bottom: 10px;
+} */
+
+#eventDetail {
+    margin-left: 20px;
+}
+
+#dayWeek {
+    background-color: #800000;
+    color: white;
+}
+
+#weekday {
+    color: white;
+}
+
+.card-body {
+    flex: 1 1 auto;
+    padding: 5px;
+}
+
+#buttonRow{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    text-align: center;
+}
+
+
+
+.material-icons {
+    color: white;
+}
+
+#menuEdit>.material-icons {
+    color: #800000;
+}
+
+#menuDelete>.material-icons {
+    color: #800000;
+}
+
+#menuSignOut>.material-icons {
+    color: #800000;
+}
+
+#newEventButton>.material-icons{
+    color: #800000;;
+}
+
+.navbar {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    background-color: #800000;
+    color: white;
+    height:8vh;
+}
+
+.links-row {
+    display:flex;
+    flex-direction:row;
+    justify-content: space-around;
+    margin: auto;
+} 
+
+.navImg {
+    padding-top:0px;
+    max-width: 80px;
+    max-height: auto;
+}
+
+/* The container <div> - needed to position the dropdown content */
+.dropdown {
+  position: relative;
+  display: inline-block;
+  margin-left: 10px;
+}
+
+/* Dropdown Content (Hidden by Default) */
+.dropdown-content {
+  /* display: none; */
+  position: absolute;
+  background-color: #f1f1f1;
+
+  min-width: 100px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+  color: black;
+  text-decoration: none;
+  display: block;
+}
+
+/* Change color of dropdown links on hover */
+.dropdown-content a:hover {background-color: #ddd;}
+
+/* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
+.show {display:block;}
+
+.dropbtn:hover, .dropbtn:focus {
+    background-color: #800000;
+}
+
+.dropbtn {
+    background-color: #880000;
+    color: white;
+    padding: 10px;
+    /* margin-left: 80px; */
+    font-size: 15px;
+    border: none;
+    cursor: pointer;
+}
+
+.card h5.card-title{
+    font-size: 1.5rem;
+    font-weight: 300;
+    
+}
+
+.card{
+    margin-inline-start: 30px;
+    margin-top: 20px;
+    border-radius: 1.5rem;
+    /* margin-bottom: 10px; */
+}
+
+#nameDateWrapper{
+    font-size: 1rem;
+    display:flex;
+    /* justify-content: right; */
+}
+
+#teamListContainer{
+    display:flex;
+    margin-bottom:20px;
+    
+}
+
+.self{
+    display: flex;
+    align-items: end;
+    color:white;
+    justify-content: right;
+    margin-right:20px;
+    
+}
+.other{
+    color:#800000
+}
+
+@media (max-width: 576px) { 
+    .modal-dialog{
+        margin-left:2.5px;
+        width:24rem;
+    }
+  }
+

@@ -1,0 +1,18 @@
+For filming: 
+- Use the Mac to screen record the presented windows, and then use mobile and record on it separately
+
+General
+- Just put stuff in bootatrap so it does rsizig for us
+  - From react to header text
+- "Welcome, but not required, use a custom domain (not just .web.app)"
+
+Calendar
+- Have it only display events if 1) they have a valid start end ordering and 2) if the end of the event has not yet passed
+
+Navbar
+- needs to look better in sdesktop and mobile
+
+Settings/Schedule
+- Mobile display for HOME PAGE, SCHEDULES
+- LINING UP DAYS ON SCHEDULE
+- MAKE FAB WHITE ON SETTINGS

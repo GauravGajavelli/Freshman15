@@ -130,6 +130,8 @@ body {
 }
 
 
+
+
 .board-row:after {
   clear: both;
   content: "";

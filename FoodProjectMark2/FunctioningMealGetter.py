@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 def writetoindex(scripts, menuitems):
     # gets file string
-    g = open("FoodProject\my-app\src\App.js", "r")
+    g = open("FoodProjectMark2\public\scripts\App.js", "r")
     strni = g.read()
     g.close()
 
@@ -14,8 +14,8 @@ def writetoindex(scripts, menuitems):
     secondstr = "function DONOTDELETE()"
     start1 = strni.find(firststr)
     start2 = strni.find(secondstr)
-    # print(start1)
-    # print(start2)
+    print(start1)
+    print(start2)
 
     # saves start and end for later reconstitution (easier than seek stuff)
     firstpart = strni[:start1]
@@ -25,7 +25,7 @@ def writetoindex(scripts, menuitems):
     # print(secondpart)
 
     # Writing
-    f = open("FoodProject\my-app\src\App.js", "w")
+    f = open("FoodProjectMark2\public\scripts\App.js", "w")
 
     # writing first part
     f.write(firstpart)

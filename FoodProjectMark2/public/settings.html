@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons"
+    />
+    <link rel="stylesheet" href="styles/bootstrap-material-design.min.css" />
+    <link rel="stylesheet" href="styles/schedule.css" />
+    <link rel="stylesheet" href="styles/chatteams.css" />
+    <link rel="stylesheet" href="styles/settings.css" />
+
+    <title>Settings</title>
+  </head>
+
+  <body>
+    <nav class="navbar navbar-dark fixed-top">
+      <div class="links-row">
+        <div>
+          <button type="button" class="btn btn-block" id="navHomeButton">
+            <img class="navImg" src="images/home.png" alt="Responsive image" />
+          </button>
+        </div>
+        <div>
+          <button
+            data-button-index="2"
+            type="button"
+            class="btn btn-block"
+            id="navChatButton"
+          >
+            <img class="navImg" src="images/chat.png" alt="Responsive image" />
+          </button>
+        </div>
+
+        <div>
+          <button
+            data-button-index="5"
+            type="button"
+            class="btn btn-block"
+            id="navCalendarButton"
+          >
+            <img
+              class="navImg"
+              src="images/calendar.png"
+              alt="Responsive image"
+            />
+          </button>
+        </div>
+        <div>
+          <button
+            data-button-index="6"
+            type="button"
+            class="btn btn-block"
+            id="navLinksButton"
+          >
+            <img class="navImg" src="images/links.png" alt="Responsive image" />
+          </button>
+        </div>
+        <div>
+          <button
+            data-button-index="4"
+            type="button"
+            class="btn btn-block"
+            id="navSettingsButton"
+          >
+            <img
+              class="navImg"
+              src="images/settings.png"
+              alt="Responsive image"
+            />
+          </button>
+        </div>
+      </div>
+    </nav>
+    <div id="mainSettingsPage" class="container page-container">
+      <div class="flex-rectangle mx-auto">
+        <h2 class="text-center">
+          Select the days and times that you are available
+        </h2>
+        <h3>To save your changes, click the save button</h3>
+        <div class="App mx-auto"></div>
+        <br />
+        <div  id="scheduleButtons"class="row">
+          <button id="saveScheduleButton" type="button" class="btn-secondary">
+            SAVE
+          </button> 
+          <button id="clearScheduleButton" type="button" class="btn-secondary">
+            CLEAR
+          </button>
+        </div>
+      </br>
+        <h1>Add/Remove Teams</h1>
+        <h4>Note: Adding yourself to a team might take a few seconds</h4>
+        <div id="teamListContainer"></div>
+
+        <div
+          class="modal fade"
+          id="deleteQuoteDialog"
+          tabindex="-1"
+          role="dialog"
+          aria-labelledby="Delete quote dialog"
+          aria-hidden="true"
+        >
+          <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 id="teamDelete" class="modal-title">Delete this team?</h5>
+              </div>
+
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  data-dismiss="modal"
+                >
+                  CANCEL
+                </button>
+                <button
+                  id="submitDeleteQuote"
+                  type="button"
+                  class="btn btn-primary"
+                  data-dismiss="modal"
+                >
+                  DELETE
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button
+        id="newEventButton"
+        type="button"
+        class="btn bmd-btn-fab"
+        data-toggle="modal"
+        data-target="#addQuoteDialog"
+      >
+        <i class="material-icons">add</i>
+      </button>
+      <div
+        class="modal fade"
+        id="addQuoteDialog"
+        tabindex="-1"
+        role="dialog"
+        aria-labelledby="exampleModalLabel"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Add Team</h5>
+            </div>
+            <div class="modal-body">
+              <div class="form-group bmd-form-group">
+                <!-- left unspecified, .bmd-form-group will be automatically added (inspect the code) -->
+                <label for="inputTeam" class="bmd-label-floating"
+                  >New Team</label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="inputTeam"
+                  placeholder=""
+                />
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-dismiss="modal"
+              >
+                CANCEL
+              </button>
+              <button
+                id="submitNewTeam"
+                type="button"
+                class="btn btn-primary"
+                data-dismiss="modal"
+              >
+                CREATE
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script
+      src="https://unpkg.com/react@16/umd/react.production.min.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"
+      crossorigin
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel" src="scripts/Row.js"></script>
+    <script type="text/babel" src="scripts/Square.js"></script>
+    <script
+      src="https://unpkg.com/react@16/umd/react.production.min.js"
+      crossorigin
+    ></script>
+    <script
+      src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"
+      crossorigin
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel" src="scripts/Row.js"></script>
+    <script type="text/babel" src="scripts/Square.js"></script>
+
+    <script type="text/babel">
+      window.sessionStorage.clear(); // clears schedule
+    </script>
+
+    <script src="scripts/jquery.min.js"></script>
+    <script src="scripts/popper.js"></script>
+    <script src="scripts/bootstrap-material-design.js"></script>
+    <script>
+      $("body").bootstrapMaterialDesign();
+    </script>
+    <script src="/__/firebase/7.18.0/firebase-app.js"></script>
+    <script src="/__/firebase/7.18.0/firebase-analytics.js"></script>
+    <script src="/__/firebase/7.18.0/firebase-auth.js"></script>
+    <script src="/__/firebase/7.18.0/firebase-firestore.js"></script>
+    <script src="/__/firebase/init.js"></script>
+
+    <script src="scripts/main.js"></script>
+
+    <script type="text/babel">
+      const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+      // Generates times array; half hour intervals from start to end
+      let times = [];
+      while (times[times.length - 1] != "08:00 PM") {
+        let ampm = "AM";
+        if (times.length > 0) {
+          let timeStr = times[times.length - 1];
+          if (timeStr.includes("PM") || timeStr == "11:30 AM") {
+            ampm = "PM";
+          }
+          let prevHour = timeStr.substring(0, 2);
+          let prevMinutes = timeStr.substring(3, 5);
+          let nexHour = parseInt(prevHour);
+          let nexMinutes = "30";
+          if (prevMinutes == "30") {
+            if (prevHour == "12") {
+              nexHour = 1;
+            } else {
+              nexHour++;
+            }
+            nexMinutes = "00";
+          }
+          if (nexHour < 10) {
+            nexHour = "0" + nexHour.toString();
+          } else {
+            nexHour = nexHour.toString();
+          }
+          times.push(nexHour + ":" + nexMinutes + " " + ampm);
+        } else {
+          times.push("08:00 " + ampm);
+        }
+      }
+      console.log(times);
+
+      // Creates all the grid components
+      let columns = [];
+      let dayRow = [];
+      for (let j = 0; j < weekdays.length; j++) {
+        dayRow.push(
+          <span className="day">{weekdays[j] ? weekdays[j] : "Weekday"}</span>
+        );
+      }
+      columns.push(<Row contents={dayRow} time={null} />);
+
+      // Adds the components to the app
+      for (let i = 0; i < times.length; i++) {
+        let row = [];
+        for (let j = 0; j < weekdays.length; j++) {
+          row.push(<Square day={weekdays[j]} time={times[i]} />);
+        }
+        columns.push(<Row contents={row} time={times[i]} />);
+      }
+
+      ReactDOM.render(<>{columns}</>, document.querySelector(".App"));
+    </script>
+  </body>
+</html>
