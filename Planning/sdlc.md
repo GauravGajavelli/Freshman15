@@ -8,7 +8,7 @@ Reference AirPizza and the project plan we made for it
   - Also makes healthy meals and choicecs no brainers
 - Start with data gathering
   - Start with being able to puppeteer it off
-    - This weekend goal;
+    - This weekend goal; consider using legacy as skeleton and actual data from regular site. A lot of analogous funcs can be reused from open gradebook
   - Then go screen by screen
     - First the .pdf one, with file processing db
     - Then use sql knowledge to design schema with features of other pages in mind
