@@ -7,8 +7,7 @@ Reference AirPizza and the project plan we made for it
   - Connecting with others through the app as friends like insta, so you can share schedules
   - Also makes healthy meals and choicecs no brainers
 - Start with data gathering
-  - Start with being able to puppeteer it off
-    - This weekend goal;
+  - Start with being able to puppeteer it off (webscraping workflow: figure out selectors, figure out inputs, code)
   - Then go screen by screen
     - First the .pdf one, with file processing db
     - Then use sql knowledge to design schema with features of other pages in mind

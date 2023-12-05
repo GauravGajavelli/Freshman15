@@ -1,0 +1,98 @@
+{
+  "id": "5423047",
+  "label": "grilled turkey burger on white bun",
+  "recipes": {
+    "entrees": [
+      {
+        "recipe_id": "40758",
+        "recipe_name": "1/4 lb turkey burger white bun"
+      }
+    ]
+  },
+  "description": "",
+  "short_name": "",
+  "raw_cooked": "0",
+  "is_rotating": "0",
+  "zero_entree": "0",
+  "cor_icon": [],
+  "ordered_cor_icon": [],
+  "nextepid": null,
+  "price": "",
+  "sizes": [],
+  "nutrition": {
+    "kcal": "390",
+    "well_being": "5.0",
+    "well_being_image": ""
+  },
+  "special": 0,
+  "tier3": 0,
+  "tier": "2",
+  "rating": "",
+  "connector": "",
+  "options": [],
+  "station_id": "10277",
+  "station": "<strong>@sizzle</strong>",
+  "nutrition_details": {
+    "calories": {
+      "label": "Calories",
+      "value": "390",
+      "unit": ""
+    },
+    "servingSize": {
+      "label": "Serving Size",
+      "value": "5.7",
+      "unit": "oz"
+    },
+    "fatContent": {
+      "label": "Total Fat",
+      "value": "12",
+      "unit": "g"
+    },
+    "saturatedFatContent": {
+      "label": "Saturated Fat",
+      "value": "3",
+      "unit": "g"
+    },
+    "transFatContent": {
+      "label": "Trans Fat",
+      "value": "0",
+      "unit": "g"
+    },
+    "cholesterolContent": {
+      "label": "Cholesterol",
+      "value": "80",
+      "unit": "mg"
+    },
+    "sodiumContent": {
+      "label": "Sodium",
+      "value": "460",
+      "unit": "mg"
+    },
+    "carbohydrateContent": {
+      "label": "Total Carbohydrate",
+      "value": "39",
+      "unit": "g"
+    },
+    "fiberContent": {
+      "label": "Dietary Fiber",
+      "value": "2",
+      "unit": "g"
+    },
+    "sugarContent": {
+      "label": "Sugars",
+      "value": "5",
+      "unit": "g"
+    },
+    "proteinContent": {
+      "label": "Protein",
+      "value": "31",
+      "unit": "g"
+    }
+  },
+  "ingredients": "",
+  "nutrition_link": "nutrition information",
+  "sub_station_id": "4167",
+  "sub_station": "burgers and sandwiches",
+  "sub_station_order": "12",
+  "monotony": {}
+}
