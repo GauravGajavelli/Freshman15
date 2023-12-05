@@ -18,7 +18,7 @@ var puppeteer = require('puppeteer');
 // scripts = soup.find_all("script", string=re.compile(r"Bamco\.dayparts"))
 // menuitems = soup.find_all(
 //     "script", string=re.compile(r"Bamco\.menu_items"))
-
+const archivedBonSite = "data/old_bon_site.html";
 enum foodTier {
     Special = 1,
     Additional,
@@ -118,19 +118,22 @@ function formattedDate (daysAgo:number):string {
     let val = DateTime.now().minus({ days: daysAgo });
     return val.year+"-"+val.month.toString(2,'0').padStart()+"-"+val.day.toString().padStart(2,'0');
 }
-async function bonSiteUp(daysAgo:number):Promise<string> {
+// TODO
+async function bonSiteUp():Promise<string> {
     // puppeteering
     const browser = await puppeteer.launch({headless: "new"});
     const page = await browser.newPage();
     // Banner web schedule site
-    await page.goto(bonSite(daysAgo), { timeout: 30000 } );
+    await page.goto(bonSite(0), { timeout: 30000 } );
 
     // Inputting username/password
     await page.screenshot({path: 'files/screenshot0.png'});
     let content = await page.content();
     return content.toString();
 }
-async function getFoods(daysAgo:number):Promise<Food[]> {
+// Returns a list of foods from the site daysAgo number of days ago
+// NOTE: Only call after you've downloaded menu
+async function getMeals(daysAgo:number,menu):Promise<Food[]> {
     // puppeteering
     const browser = await puppeteer.launch({headless: "new"});
     const page = await browser.newPage();
@@ -139,22 +142,52 @@ async function getFoods(daysAgo:number):Promise<Food[]> {
     await page.screenshot({path: 'files/screenshot1.png'});
 
     let toRet = [];
-    // Make sure to get from all meals and also from all tiers
-    await getBreakfast(page, toRet);
-    await getLunch(page, toRet);
-    await getDinner(page, toRet);
+    // Make sure to get from all meals and also from all food tiers
+        // document.querySelector("#lunch .site-panel__daypart-tabs [data-key-index='0'] .h4")
+        // Special: data-key-index 0
+        // Additional: data-key-index 1
+        // Condiment: data-key-index 2
+    // Good for double-checking overall "#breakfast .script", has an array of all food IDs in meal
+
+    // document.querySelector("#breakfast .site-panel__daypart-tabs [data-key-index='0'] .h4")
+    let meals = ["breakfast", "lunch", "dinner"];
+    for (let meal in meals) {
+        await getFoods(page, meal,foodTier.Special, toRet,menu);
+        await getFoods(page, meal,foodTier.Additional, toRet,menu);
+        await getFoods(page, meal,foodTier.Condiment, toRet,menu);
+    }
     return toRet;
 }
-// Length changed because no longer at limit of course length
-async function hasNext(page, oldLen) {
-    // return !!(await page.$("[ng-click=\"setCurrent(pagination.current + 1)\"]"));
-    // let length = await page.evaluate(() => {
-    //     return (Array.from(document.querySelector('#courses').children).length);
-    // });
-    // return oldLen == length;
+// TODO
+async function getFoods(page,meal:string,tier:foodTier,toRet:number[],menu):Promise<void> {
+    const nn = await page.$$("#"+meal+" .site-panel__daypart-tabs [data-key-index='"+foodTier+"'] .h4"); // all foods in the meal
+    for (let i = 0; i < nn.length; i++) {
+        // function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, tear:foodTier, servingSize:number,servingUnits:string):Food {
+        const id = await( await nn[i].getAttribute('data-id') ).jsonValue();
+        toRet.push(food_factory(
+            // fill in vals by indexing into menu with id
+        ));
+    }
 }
+// TODO
+// ASSUMPTION: the idea of getting the menu from days ago (and this does matter, as the IDs shift), hinges on them having giving us consistent menu IDs within each day's site
+// Returns a json of the menu with strings from the site daysAgo number of days ago
+async function getMenu(daysAgo:number):Promise<string> {
+    // puppeteering
+    const browser = await puppeteer.launch({headless: "new"});
+    const page = await browser.newPage();
+    // Bon site
+    await page.goto(bonSite(daysAgo), { timeout: 30000 } );
+    await page.screenshot({path: 'files/screenshot1.png'});
 
-async function writeCourses(courses, year) {
+    let toRet = await getScript(); // document.querySelector(".panels-collection script").innerText
+    
+    // We'll do fs parsing from here for the menu
+
+    return toRet;
+}
+// TODO
+async function writeMeals() {
     let filepath = "data/"+year+"/";
     let filename = year+"_courseinfo";
     let data = {};
@@ -195,28 +228,9 @@ async function writeCourses(courses, year) {
         }
     });
 }
-// TODO: Make writing a little more sophisticated
-async function writeSections(sections, year) {
-    let filepath = "data/"+year+"/";
-    let filename = year+"_sectioninfo";
-    let data = {sections};
-
-    // Lol it's like a demo of synchronous vs promises vs callbacks
-    let dir_exists = fs.existsSync(filepath);
-    if (!dir_exists) { // If the directory already exists
-        await fs.promises.mkdir(filepath,{ recursive: true });
-    }
-    fs.writeFile(filepath+filename+".json", JSON.stringify(data), function(err, buf ) {
-        if(err) {
-            console.log("error: ", err);
-        } else {
-            console.log("Data saved successfully!");
-        }
-    });
-}
 
 // Overview
-  // This API will allow for the maintenance and use of a webscraper for Rose-Hulman's publicly available course offerings as well as specific sections for user's with credentials
+  // This API will allow for the maintenance and use of a webscraper for Rose-Hulman's publicly available meal data
 
 // Commands: 
     // Verification (COMPLETE)
@@ -241,58 +255,21 @@ async function writeSections(sections, year) {
         // Get - any non-empty classes
 
 // ISSUES: 
-    // There seems to be a recurring issue relating to a failure to log in.
-        // It's resolved by manually logging into banner web, navigating to the schedule while logged in, and then logging out
-        // Potentially also just solved by waiting
-    // 2FA is a pain in the arse
-        // Potential solution: We'll have a get where we send in a username, password, and phone number
-        // Then we'll have a post where we send in the 2FA code
     // Error: Requesting main frame too early!
         // Seems to happen arbitrarily, just rerun
 
 // Read
-// RUN BEFORE FUTURE SCRAPING. Checks if the banner site is up/in the same format it was designed for
-router.get('/scraping_up/banner/:username/:password', async function(req, res) {
-    let content = await bannerSiteUp(req.params.username,req.params.password); // gets the banner site html
-    let prev = await fs.promises.readFile(archivedBannerSite);
-    res.send(content==prev?"banner scraping is up":"banner scraping is down. \nUsername/password may be incorrect: \nHow to encode special characters in URLs (e.g., '/' = %2F):\n https://www.w3schools.com/tags/ref_urlencode.ASP");
-});
-// RUN BEFORE FUTURE SCRAPING. Checks if the public site is up/in the same format it was designed for
-router.get('/scraping_up/public', async function(req, res) {
-    let content = await publicSiteUp(); // gets the public site html
-    let prev = await fs.promises.readFile(archivedPublicSite);
+// RUN BEFORE FUTURE SCRAPING. Checks if the bon site is up/in the same format it was designed for
+router.get('/scraping_up/', async function(req, res) {
+    let content = await bonSiteUp(); // gets the public site html
+    let prev = await fs.promises.readFile(archivedBonSite);
     res.send(content==prev?"public scraping is up":"public scraping is down");
 });
-router.get('/get_classes/:year', async function(req, res) {
-    let filepath = "data/"+req.params.year+"/"+req.params.year+"_courseinfo_courseset.json";
-    let dir_exists = fs.existsSync(filepath);
-    res.send(dir_exists?await fs.promises.readFile(filepath):"This year's courses have not been scraped yet");
-});
-router.get('/get_class_name/:year/:class', async function(req, res) {
-    let filepath = "data/"+req.params.year+"/";
-    let course_set = req.params.year+"_courseinfo_courseset.json";
-    let courses = req.params.year+"_courseinfo.json";
-    let dir_exists = fs.existsSync(filepath);
-    if (dir_exists) {
-        let depts = await JSON.parse(await fs.promises.readFile(filepath+course_set));
-        let dept = depts[req.params.class]; // the corresponding dept
-        let names = await JSON.parse(await fs.promises.readFile(filepath+courses));
-        res.send(names[dept][req.params.class.substring(dept.length)]);
-    } else {
-        res.send("This year's courses have not been scraped yet");
-    }
-});
-router.get('/get_sections/:year/:class', async function(req, res) {
-    // let filepath = req.params.year+"/"+req.params.year+"_courseinfo_courseset.json";
-    // let dir_exists = fs.existsSync(filepath);
-    // res.send(dir_exists?await fs.promises.readFile(filepath):"This year's sections has not been scraped yet");
-});
-
 // Update
-// Overwrite old_banner_site.html. Only call when sure we can process old_site.html
-router.put('/update_archive/banner',async function(req,res) {
-    let content = await bannerSiteUp(); // gets the banner site html
-    fs.writeFile(archivedBannerSite,content,function(err, buf) {
+// Overwrite old_bon_site.html. Only call when sure we can process old_site.html
+router.put('/update_archive/',async function(req,res) {
+    let content = await bonSiteUp(); // gets the banner site html
+    fs.writeFile(archivedBonSite,content,function(err, buf) {
         if(err) {
             res.send("error writing: ", err);
         } else {
@@ -300,22 +277,17 @@ router.put('/update_archive/banner',async function(req,res) {
         }
     });
 });
-// Overwrite old_public_site.html. Only call when sure we can process old_site.html
-router.put('/update_archive/public',async function(req,res) {
-    let content = await publicSiteUp(); // gets the public site html
-    fs.writeFile(archivedPublicSite,content,function(err, buf) {
-        if(err) {
-            res.send("error writing: ", err);
-        } else {
-            res.send("success writing");
-        }
-    });
-});
-// Write all courses from public site into 20XX_courseinfo.json. Year specified is the later of xxxx-yyyy, aka the year the class of yyyy graduates
-router.put('/load_courses/:year',async function(req,res) {
-    let curYear = thisYear();
-    let months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    // Can't tell the future
+// TODO
+// Write all meal data from xxxx days ago to tables
+router.put('/load_meals/:daysAgo',async function(req,res) {
+    let daysAgo = req.params.daysAgo;
+    // Valid days ago checking
+    // Get menu object.
+        // let menu = await JSON.parse(await getMenu(daysAgo));
+    // Get all foods in an array using the menu object
+        // let foods = await getMeals(daysAgo,menu);
+    // Writing to a sqlserver db
+
     if (req.params.year > curYear+1) {
         res.send("Invalid year: "+req.params.year);
     }
@@ -336,19 +308,6 @@ router.put('/load_courses/:year',async function(req,res) {
     // stepping through all 39 pages, will likely involve another puppeteer function to await
     let courses = await getCourses(year);
     await writeCourses(courses,req.params.year);
-    res.end();
-});
-// Write all sections from banner site into 20XX_sectioninfo.json (depends on corresponding courseinfo.json). // Write all courses from public site into 20XX_courseinfo.json. Year specified is the later of xxxx-yyyy, aka the year the class of yyyy graduates
-router.put('/load_sections/:year/:username/:password',async function(req,res) {
-    let curYear = thisYear();
-    // Can't tell the future
-    if (req.params.year > curYear+1) {
-        res.send("Invalid year: "+req.params.year);
-    }
-    let sections = await getSections(req.params.year,req.params.username, req.params.password);
-    // Load/use the collected course info while organizing 
-    await writeSections(sections,req.params.year);
-    
     res.end();
 });
 
