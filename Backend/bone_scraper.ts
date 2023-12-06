@@ -1,6 +1,6 @@
 import { displayPartsToString, getDefaultLibFileName } from "typescript";
 
-console.log("Hello Courses");
+console.log("Hello Bon");
 
 var express = require('express');
 var router = express.Router();
@@ -18,9 +18,9 @@ var puppeteer = require('puppeteer');
 // scripts = soup.find_all("script", string=re.compile(r"Bamco\.dayparts"))
 // menuitems = soup.find_all(
 //     "script", string=re.compile(r"Bamco\.menu_items"))
-const archivedBonSite = "data/old_bon_site.html";
+const archivedBonSite = "files/old_bon_site.html";
 enum foodTier {
-    Special = 1,
+    Special = 0,
     Additional,
     Condiment
 }
@@ -116,9 +116,8 @@ function bonSite(daysAgo:number):string {
 }
 function formattedDate (daysAgo:number):string {
     let val = DateTime.now().minus({ days: daysAgo });
-    return val.year+"-"+val.month.toString(2,'0').padStart()+"-"+val.day.toString().padStart(2,'0');
+    return val.year+"-"+val.month.toString().padStart(2,'0')+"-"+val.day.toString().padStart(2,'0');
 }
-// TODO
 async function bonSiteUp():Promise<string> {
     // puppeteering
     const browser = await puppeteer.launch({headless: "new"});
@@ -129,11 +128,11 @@ async function bonSiteUp():Promise<string> {
     // Inputting username/password
     await page.screenshot({path: 'files/screenshot0.png'});
     let content = await page.content();
-    return content.toString();
+    return content.toString().substring(2000,4000);
 }
 // Returns a list of foods from the site daysAgo number of days ago
 // NOTE: Only call after you've downloaded menu
-async function getMeals(daysAgo:number,menu):Promise<Food[]> {
+async function getMeals(daysAgo:number,menu:any):Promise<Food[]> {
     // puppeteering
     const browser = await puppeteer.launch({headless: "new"});
     const page = await browser.newPage();
@@ -141,7 +140,7 @@ async function getMeals(daysAgo:number,menu):Promise<Food[]> {
     await page.goto(bonSite(daysAgo), { timeout: 30000 } );
     await page.screenshot({path: 'files/screenshot1.png'});
 
-    let toRet = [];
+    let toRet:Food[] = [];
     // Make sure to get from all meals and also from all food tiers
         // document.querySelector("#lunch .site-panel__daypart-tabs [data-key-index='0'] .h4")
         // Special: data-key-index 0
@@ -150,26 +149,46 @@ async function getMeals(daysAgo:number,menu):Promise<Food[]> {
     // Good for double-checking overall "#breakfast .script", has an array of all food IDs in meal
 
     // document.querySelector("#breakfast .site-panel__daypart-tabs [data-key-index='0'] .h4")
-    let meals = ["breakfast", "lunch", "dinner"];
-    for (let meal in meals) {
+    let meals:string[] = ["breakfast", "lunch", "dinner"];
+    for (let i:number = 0; i < meals.length; i++) {
+        let meal:string = meals[i];
         await getFoods(page, meal,foodTier.Special, toRet,menu);
         await getFoods(page, meal,foodTier.Additional, toRet,menu);
         await getFoods(page, meal,foodTier.Condiment, toRet,menu);
     }
     return toRet;
 }
-// TODO
-async function getFoods(page,meal:string,tier:foodTier,toRet:number[],menu):Promise<void> {
-    const nn = await page.$$("#"+meal+" .site-panel__daypart-tabs [data-key-index='"+foodTier+"'] .h4"); // all foods in the meal
+async function getFoods(page:any,meal:string,tier:foodTier,toRet:Food[],menu:any):Promise<void> {
+    const nn = await page.$$("#"+meal+" .site-panel__daypart-tabs [data-key-index='"+tier+"'] .h4"); // all foods in the meal
     for (let i = 0; i < nn.length; i++) {
         // function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, tear:foodTier, servingSize:number,servingUnits:string):Food {
-        const id = await( await nn[i].getAttribute('data-id') ).jsonValue();
-        toRet.push(food_factory(
-            // fill in vals by indexing into menu with id
-        ));
+        const id = ( await page.evaluate((el: { getAttribute: (arg0: string) => any; }) => el.getAttribute("data-id"), nn[i]));
+        // console.log("data id: "+id);
+        const name = menu[id]["label"];
+        if ("nutrition_details" in menu[id] && Object.keys(menu[id]["nutrition_details"]).length > 0) {
+            const calories = menu[id]["nutrition_details"]["calories"]["value"];
+            const carbs = menu[id]["nutrition_details"]["carbohydrateContent"]["value"];
+            const rote = menu[id]["nutrition_details"]["proteinContent"]["value"];
+            const phat = menu[id]["nutrition_details"]["fatContent"]["value"];
+            const servingSize = menu[id]["nutrition_details"]["servingSize"]["value"];
+            const servingUnits = menu[id]["nutrition_details"]["servingSize"]["unit"];
+            toRet.push(food_factory(id,name,calories,carbs,rote,phat,tier,servingSize,servingUnits));
+        }
     }
 }
-// TODO
+// function hasNutrition (details:any):boolean {
+//     let keys = Object.keys(details);
+//     console.log("crimbo: "+keys);
+//     for (let i = 0; i < keys.length; i++) {
+//         // console.log("deets: "+Object.keys(details[keys[i]]));
+//         // console.log("gloeorm: "+details[keys[i]]["value"]);
+//         if (details[keys[i]] == null) {
+//             return false;
+//         }
+//     }
+//     return true;
+// }
+
 // ASSUMPTION: the idea of getting the menu from days ago (and this does matter, as the IDs shift), hinges on them having giving us consistent menu IDs within each day's site
 // Returns a json of the menu with strings from the site daysAgo number of days ago
 async function getMenu(daysAgo:number):Promise<string> {
@@ -180,55 +199,34 @@ async function getMenu(daysAgo:number):Promise<string> {
     await page.goto(bonSite(daysAgo), { timeout: 30000 } );
     await page.screenshot({path: 'files/screenshot1.png'});
 
-    let toRet = await getScript(); // document.querySelector(".panels-collection script").innerText
+    // script containing the menu json
+    let script = 
+        await ( 
+        await (
+        await page.$(".panels-collection script")).getProperty('innerHTML') 
+        ).jsonValue(); // document.querySelector(".panels-collection script").innerText
     
-    // We'll do fs parsing from here for the menu
-
-    return toRet;
+    // Literally just the substring past Bamco.menu_items to Bamco.cor_icons
+    let startDex = script.indexOf("Bamco.menu_items")+"Bamco.menu_items".length+3;
+    let endDex = script.indexOf("Bamco.cor_icons")-6;
+    return script.substring(startDex,endDex);
 }
-// TODO
-async function writeMeals() {
-    let filepath = "data/"+year+"/";
-    let filename = year+"_courseinfo";
-    let data = {};
-    let courseset = {};
-    for (let i = 0; i < courses.length; i++) {
-        let cid = courses[i].cid;
-        let cur_dept = courses[i].department;
-        let cname = courses[i].cname;
-        courseset[cur_dept+cid] = cur_dept; // so we can split by the prefixes
-
-        let cur = {};
-        if (cur_dept in data) {
-            cur = data[cur_dept];
-        }
-        // update object
-        cur[cid] = cname;
-        // update object
-        data[cur_dept] = cur;
-    }
-
-    // Lol it's like a demo of synchronous vs promises vs callbacks
+async function writeMeals(daysAgo:number,meals:Food[]) {
+    let filepath = "files/";
+    let filename = formattedDate(daysAgo)+"_meals";
+    let data = meals;
     let dir_exists = fs.existsSync(filepath);
     if (!dir_exists) { // If the directory already exists
         await fs.promises.mkdir(filepath,{ recursive: true });
     }
-    fs.writeFile(filepath+filename+".json", JSON.stringify(data), function(err, buf ) {
+    fs.writeFile(filepath+filename+".json", JSON.stringify(data), function(err:any, buf:any ) {
         if(err) {
             console.log("error: ", err);
         } else {
-            console.log("Data saved successfully!");
-        }
-    });
-    fs.writeFile(filepath+filename+"_courseset.json", JSON.stringify(courseset), function(err, buf ) {
-        if(err) {
-            console.log("error: ", err);
-        } else {
-            console.log("Data saved successfully!");
+            console.log("Meals saved successfully!");
         }
     });
 }
-
 // Overview
   // This API will allow for the maintenance and use of a webscraper for Rose-Hulman's publicly available meal data
 
@@ -259,17 +257,20 @@ async function writeMeals() {
         // Seems to happen arbitrarily, just rerun
 
 // Read
+router.get('/test/', async function(req:any, res:any) {
+    res.send("Backend is up");
+});
 // RUN BEFORE FUTURE SCRAPING. Checks if the bon site is up/in the same format it was designed for
-router.get('/scraping_up/', async function(req, res) {
+router.get('/scraping_up/', async function(req:any, res:any) {
     let content = await bonSiteUp(); // gets the public site html
     let prev = await fs.promises.readFile(archivedBonSite);
     res.send(content==prev?"public scraping is up":"public scraping is down");
 });
 // Update
 // Overwrite old_bon_site.html. Only call when sure we can process old_site.html
-router.put('/update_archive/',async function(req,res) {
+router.put('/update_archive/',async function(req:any,res:any) {
     let content = await bonSiteUp(); // gets the banner site html
-    fs.writeFile(archivedBonSite,content,function(err, buf) {
+    fs.writeFile(archivedBonSite,content,function(err:any, buf:any) {
         if(err) {
             res.send("error writing: ", err);
         } else {
@@ -277,38 +278,32 @@ router.put('/update_archive/',async function(req,res) {
         }
     });
 });
-// TODO
 // Write all meal data from xxxx days ago to tables
-router.put('/load_meals/:daysAgo',async function(req,res) {
-    let daysAgo = req.params.daysAgo;
+router.put('/load_meals/:daysAgo',async function(req:any,res:any) {
+    let daysAgo:number = req.params.daysAgo;
     // Valid days ago checking
     // Get menu object.
-        // let menu = await JSON.parse(await getMenu(daysAgo));
     // Get all foods in an array using the menu object
         // let foods = await getMeals(daysAgo,menu);
     // Writing to a sqlserver db
 
-    if (req.params.year > curYear+1) {
-        res.send("Invalid year: "+req.params.year);
+    if (daysAgo < -1) {
+        res.send("Invalid day: "+daysAgo);
     }
     // Since summer registrations are over and the public site will be aimed at potential new students, it'll switch over in May to the next school year.
     // Before April it will probably not have switched and therefore the next year will not yet be valid.
-    if ((req.params.year == curYear+1 && curMonth() < 3)) {
-        res.send("Invalid month. Too early in the year for next years schedule: "+months.get(curMonth())+"\n(Correct if I'm wrong)");
-    }
 
-    // So we assume the site will switch over in May, so anything after that "current" will be next year, and we assume "prev-year" will start existing
-    let year = "";
-    // We know there will be a valid url for the given year
-    if (req.params.year == curYear+1 || (req.params.year == curYear && curMonth() < 4)) { // Means next year and we know it's valid, so we look at the latest ("current"), or we want this year and it hasn't switched yet
-        year = "current";
-    } else { // So we're either looking at this year or years previous once they've been superceded by a current
-        year = (req.params.year-1)+"-"+req.params.year;
-    }
-    // stepping through all 39 pages, will likely involve another puppeteer function to await
-    let courses = await getCourses(year);
-    await writeCourses(courses,req.params.year);
-    res.end();
+    let menu = await JSON.parse(await getMenu(daysAgo));
+    // let 
+    let toWrite:Food[] = await getMeals(daysAgo,menu);
+    await writeMeals(daysAgo,toWrite);
+    fs.writeFile("files/menu.json",JSON.stringify(menu),function(err:any,buf:any) {
+        if(err) {
+            res.send("error writing: ", err);
+        } else {
+            res.send("success writing");
+        }
+    });
 });
 
 module.exports = router;
