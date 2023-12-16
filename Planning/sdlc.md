@@ -11,6 +11,9 @@ The goal is to follow this advice: https://www.youtube.com/watch?v=LBc8bXoK61Y
   - Also makes healthy meals and choicecs no brainers
 - Start with data gathering
   - Start with being able to puppeteer it off (webscraping workflow: figure out selectors, figure out inputs, code)
+  - Learn AWS and GCP to (do basic cloud practitioner certs) for the summer and to figure out how to host SQL Server like in: 
+    - https://learn.microsoft.com/en-us/sql/connect/node-js/node-js-driver-for-sql-server?view=sql-server-ver16
+    - https://www.youtube.com/watch?v=zvvqUsvB540
   - Then go screen by screen
     - First the .pdf one, with file processing db
     - Then use sql knowledge to design schema with features of other pages in mind
