@@ -1,89 +1,82 @@
-body {
-    background: #DDDDDD;
-}
-
-.navbar {
-    background-color: #800000;
-    color: white;
-}
-
-.page-container {
-    margin-top: 75px;
-}
-
-.square {
-    background-color: #80000080;
-    color: white;
+/* Sources */
+/* https://www.w3schools.com/css/css3_flexbox.asp */
+/* https://www.instacart.com/store/kroger-delivery-now/storefront */
+.flex-container {
+    display: flex;
     text-align: center;
-    font-size: 60px;
-    line-height: 100px;
-    font-weight: 500;
-    flex: 1 0 33.3%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
 }
-
-/* You can add the following classes to get the corresponding features */
-
-.b-top {
-    border-top: 4px solid #000000;
-}
-
-.b-bottom {
-    border-bottom: 4px solid #000000;
-}
-
-.b-left {
-    border-left: 4px solid #000000;
-}
-
-.b-right {
-    border-right: 4px solid #000000;
-}
- #newGameButton {
-    background:#800000;
-    margin-top: 15px;
-    color:white;
-    /* auto means you can expand, so this shifts right */
-    margin-left:auto;
-    /* grid-column uses the start and end columns */
-    /* grid-column: 1 / 4; */
-    grid-column: span 3;
-    /* Negative indexing (to choose last column also works) */
-
- }
-
-.my-row {
-    display:flex;
-    flex-direction:row;
-} 
-
-#gameBoard {
-    height: 300px;
-    width: 300px;
-}
-
-#gameStateText {
+.flex-container3 {
+    display: flex;
     text-align: center;
+    flex-direction: column;
+    flex-wrap: wrap;
 }
-
-#gameBoard {
-    /* we wanna avoid hard-coded number, and we definitely want them to be different for different screen sizes */
-    height: 300px;
-    /* margin:20px auto; */
-    width:300px;
-    display: grid;
-    /* auto auto auto is imbalanced, use 1fr */
-    grid-template-columns: 1fr 1fr 1fr;
-    /* helps prevent issues with shrinkage of cells with no inner G */
-    /* Would've done auto auto auto or 1fr 1fr 1fr if tey didn't results in imbalance for some reason */
-    grid-template-rows: 33.3% 33.3% 33.3%;
-}
-
-.page-container {
-    margin-top: 75px;
+.flex-container2 {
     display: flex;
     flex-direction: column;
-    /* You center on the main axis using justify-content property, but across the perpendicular you use align items*/
-    align-items: center;
+}
+.flex-container4 {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+.flex-container5 {
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+    justify-content: space-evenly;
+}
+.flex-container6 {
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+    justify-content: space-evenly;
+}
+.flex-container7 {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    align-items: baseline;
+}
+.flex-item {
+    background-color: #f1f1f1;
+    color: #000;
+    margin: 10px;
+    font-size: 0.5em;
+}
+.flex-item span {
+    display: flex;
+    text-align: center;
+    justify-content: space-evenly;
+    flex-direction: row;
+}
+.flex-item button {
+    background-color: #f1f1f1;
+    color: #000;
+}
+.flex-item2 {
+    background-color: #f1f1f1;
+    color: #000;
+    margin: 10px;
+}
+.flex-item3 {
+    margin: 10px;
+}
+.removed {
+    color: blue;
+}
+.added {
+    color: red;
+}
+#quantity {
+    font-size: 1em;
+}
+.flex-container7 h4 {
+    margin: 5px;
 }
 
 /* // Extra small devices (portrait phones, less than 576px) */
@@ -92,56 +85,19 @@ body {
 /* // Small devices (landscape phones, 576px and up) */
 @media (min-width: 576px) { 
     /* code only exists if the condition is met */
-
-    
-    #gameBoard {
-        /* we wanna avoid hard-coded number, and we definitely want them to be different for different screen sizes */
-        height: 450px;
-        /* margin:20px auto; */
-        width:450px;
-    }
-
-    /* Paste in the previously written css and eliminate until it's just things that need to change with the query */
-
-    .square {
-        font-size: 90px;
-        line-height: 140px;
-    }
-
-    /* Don't forget to consider everything on the page! */
-    #newGameButton {
-        font-size : 1.25em;
-    }
- }
+}
 
 /* // Medium devices (tablets, 768px and up) */
 @media (min-width: 768px) { 
-    #gameBoard {
-        /* we wanna avoid hard-coded number, and we definitely want them to be different for different screen sizes */
-        height: 600px;
-        width:600px;
-    }
+}
 
-    /* Paste in the previously written css and eliminate until it's just things that need to change with the query */
-
-    .square {
-        font-size: 120px;
-        line-height: 180px;
-    }
-
-    
-    #newGameButton {
-        font-size : 1.5em;
-    }
- }
-/* 
- // Large devices (desktops, 992px and up) 
+/* // Large devices (desktops, 992px and up)  */
 @media (min-width: 992px) { 
 
  }
 
- // Extra large devices (large desktops, 1200px and up) 
+/* // Extra large devices (large desktops, 1200px and up)  */
 @media (min-width: 1200px) { 
 
  }
- */
+ 

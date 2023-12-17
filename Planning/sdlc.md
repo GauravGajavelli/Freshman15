@@ -26,10 +26,25 @@ The goal is to follow this advice: https://www.youtube.com/watch?v=LBc8bXoK61Y
   - Bon appetit extension/new tab widget is cool - Luke Buchanan
 - Main screens: 
   - The one in the .pdf, with login or guest use (actually that's at the top of all pages)
-    - It's like the flow of the java app, but instead of having to clicky clicky, you just scroll down for the list view, and check off the whole meal if you've chosen it
-    - Have filters like vegetarian etc (the presets set in profile but the specific meals can be adjusted in here)
-      - Also have a search filter like for Open Gradebook
-    - Instead of clicking the item, clone like instacart checking off
+    - It's like the flow of the java app
+      - But instead of having to clicky clicky, you just scroll down for the list view, and check off the whole meal if you've chosen it
+    - For a first one: 
+      - A dropdown to choose the day (shows yesterday to the next five days that the bon is open)
+        - Also a dropdown to choose the meal
+      - Creates a grid of foods (DONE)
+        - Actually two, one for both the daily specials and one for the rest
+        - Need to straddle js and html, have api call
+      - Required/banned columns (DONE)
+        - Every time you click an item, the required/banned columns below it (required and at one frequency) are filled
+        - You can remove an item from the required/banned by clicking on it, just by clicking the 'Remove this' that appears in the names place
+      - A search bar (DONE)
+        - Reloads the grid each time with the given selections
+        - Can search by either attributes or by name
+          - Using a trie? Or maybe that article I found for Open Gradebook
+      - Instruction modal from a question mark top left
+      - Have filters like vegetarian etc (the presets set in profile but the specific meals can be adjusted in here)
+        - Also have a search filter like for Open Gradebook
+      - Instead of clicking the item, clone like instacart checking off
     - At the bottom there are people you can connect with like LinkedIn
     - Need to use Rose email to set up, or phone
   - A profile settings screen with dietary preferences (need login to use)

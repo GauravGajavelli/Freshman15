@@ -1,18 +1,79 @@
+<!-- Resources -->
+<!-- https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input -->
+
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Hello Button</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freshman 15</title>
     <link rel="stylesheet" href="styles/main.css" />
   </head>
 
   <body>
-    <div class="button-group">
-      <button id="decButton">Decrement</button>
-      <button id="resetButton">Reset</button>
-      <button id="incButton">Increment</button>
+    <div class="flex-container2">
+      <div class="flex-container6" id="topRow"> 
+        <div class="flex-container" id="foods">
+          <div class="flex-item"><h1>13412345678956789</h1>
+            <span>
+              <span>
+                <input type="number" id="quantity" min="1" value="1"/>
+              </span>
+              <button>
+                Remove
+              </button>
+            </span>
+          </div>
+          <div class="flex-item"><h1>2</h1>
+            <button>
+              Add
+            </button>
+            <button>
+              Remove
+            </button>
+          </div>
+          <div class="flex-item"><h1>3</h1>
+            <button>
+              Add Back
+            </button>
+          </div>
+          
+        </div>
+        <div class="flex-container7" id="search">
+          <h4>Food search: </h4>
+          <div class="flex-container">
+            <input type="search" id="site-search" name="q" />
+            <button>Search</button>
+          </div>
+        </div>
+      </div>
+      <div class="flex-container6" id="bottomRow">
+      <div class="flex-container4" id="lists">
+        <div class = "flex-container3 flex-item2" id="required">
+          <h2>Required Foods</h2>
+          <div class="added flex-container5">
+            <span>Ter</span>
+            <button>X</button>
+          </div>
+          <div class="added flex-container5">
+            <span>Ter</span>
+            <button>X</button>
+          </div>
+        </div>
+        <div class = "flex-container3 flex-item2" id="banned">
+          <h2>Banned Foods</h2>
+          <div class="removed flex-container5">
+            <span>Ter</span>
+            <button>X</button>
+          </div>
+          <div class="removed flex-container5">
+            <span>Ter</span>
+            <button>X</button>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="counterText">Count = 0</div>
+    </div>
     <script src="scripts/main.js"></script>
   </body>
 </html>
