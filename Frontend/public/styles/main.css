@@ -14,6 +14,9 @@
     text-align: center;
     flex-direction: column;
     flex-wrap: wrap;
+    padding-left: 3px;
+    padding-right: 3px;
+    padding-bottom: 10px;
 }
 .flex-container2 {
     display: flex;
@@ -41,6 +44,11 @@
     flex-direction: column;
     text-align: center;
     align-items: baseline;
+}
+.flex-container9 {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
 }
 .flex-item {
     background-color: #f1f1f1;

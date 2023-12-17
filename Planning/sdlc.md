@@ -37,16 +37,21 @@ The goal is to follow this advice: https://www.youtube.com/watch?v=LBc8bXoK61Y
       - Required/banned columns (DONE)
         - Every time you click an item, the required/banned columns below it (required and at one frequency) are filled
         - You can remove an item from the required/banned by clicking on it, just by clicking the 'Remove this' that appears in the names place
+        - There should also be a column for the generated meal (DONE)
+          - Required foods added are red at the top
       - A search bar (DONE)
         - Reloads the grid each time with the given selections
         - Can search by either attributes or by name
           - Using a trie? Or maybe that article I found for Open Gradebook
       - Instruction modal from a question mark top left
-      - Have filters like vegetarian etc (the presets set in profile but the specific meals can be adjusted in here)
+        - Later, when feature set is set
+      - Have filters like vegetarian etc (the presets set in profile but the specific meals can be adjusted in here) (DONE)
         - Also have a search filter like for Open Gradebook
-      - Instead of clicking the item, clone like instacart checking off
-    - At the bottom there are people you can connect with like LinkedIn
-    - Need to use Rose email to set up, or phone
+      - Instead of clicking the item, clone like instacart checking off (DONE)
+      - At the bottom there are people you can connect with like LinkedIn
+        - Not necessary yet
+      - Login/site navigation. Need to use Rose email to set up, or phone
+        - Use that header thing that was always red on our apps
   - A profile settings screen with dietary preferences (need login to use)
     - Caloric amounts
     - Veg etc.
