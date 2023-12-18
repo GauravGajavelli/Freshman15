@@ -11,9 +11,10 @@
   </head>
 
   <body>
-    <div class="flex-container2">
+    <div class="flex-container2" id="mainPage">
       <div class="flex-container6" id="topRow"> 
         <div class="flex-container" id="foods">
+          <!-- I want this to have it's own little square scrolling area to prevent it from growing too much -->
           <div class="flex-item"><h1>13412345678956789</h1>
             <span>
               <span>
@@ -61,6 +62,23 @@
                 </div>
               </div>
             </div>
+            <div class = "flex-container3 flex-item2" id="diets">
+              <h3>Meal Parameters</h3>
+              <div class="flex-container9">
+                <div class = "flex-container2">
+                  <span class="flex-item3">Calories: </span>
+                  <span class="flex-item3">Fat %: </span>
+                  <span class="flex-item3">Carb %: </span>
+                  <span class="flex-item3">Protein %: </span>
+                </div>
+                <div class = flex-container2>
+                  <input type="number" min="0" max="10000" value="750">
+                  <input type="number" min="0" max="100" value="25">
+                  <input type="number" min="0" max="100" value="55">
+                  <input type="number" min="0" max="100" value="20">
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -98,6 +116,6 @@
       </div>
     </div>
     </div>
-    <script src="scripts/main.js"></script>
+    <script src="scripts/main2.js"></script>
   </body>
 </html>
