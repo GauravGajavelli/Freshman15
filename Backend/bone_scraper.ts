@@ -227,6 +227,20 @@ async function writeMeals(daysAgo:number,meals:Food[]) {
         }
     });
 }
+// Returns if DB/file storage for having the value
+async function inArchive(daysAgo:number):Promise<Boolean> {
+    let filepath = "files/";
+    let filename = formattedDate(daysAgo)+"_meals";
+    return fs.existsSync(filepath+filename+".json");
+}
+
+// Only call if the meal is in the archive
+async function readMeal(daysAgo:number):Promise<String> {
+    let filepath = "files/";
+    let filename = formattedDate(daysAgo)+"_meals";
+    return await JSON.parse(await fs.promises.readFile(filepath+filename+".json"));
+}
+
 // Overview
   // This API will allow for the maintenance and use of a webscraper for Rose-Hulman's publicly available meal data
 
@@ -304,6 +318,29 @@ router.put('/load_meals/:daysAgo',async function(req:any,res:any) {
             res.send("success writing");
         }
     });
+});
+
+router.get('/send_meals/:daysAgo/', async function(req:any, res:any) {
+    let daysAgo:number = req.params.daysAgo;
+    if (daysAgo < -1) {
+        res.send("Invalid day: "+daysAgo);
+    }
+    if (await inArchive(daysAgo)) {
+        res.send(await readMeal(daysAgo));
+    }
+    // Since summer registrations are over and the public site will be aimed at potential new students, it'll switch over in May to the next school year.
+    // Before April it will probably not have switched and therefore the next year will not yet be valid.
+
+    let menu = await JSON.parse(await getMenu(daysAgo));
+    let toWrite:Food[] = await getMeals(daysAgo,menu);
+    await writeMeals(daysAgo,toWrite);
+    fs.writeFile("files/menu.json",JSON.stringify(menu),function(err:any,buf:any) {
+        if(err) {
+            res.send("meal not found, error writing to DB: ", err);
+        } else {
+        }
+    });
+    res.send(await readMeal(daysAgo));
 });
 
 module.exports = router;
