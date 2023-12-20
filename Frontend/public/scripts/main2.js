@@ -35,7 +35,7 @@ gung.FoodController = class {
         return new gung.FoodController(model);
     }
     updateView() {
-		const food = document.querySelectorAll("#fuwafuwa");
+		const food = document.querySelector("#fuwafuwa");
 		// forEach receives a function
 		// squares.forEach((square, index) => {
 		// 	square.innerHTML = this.game.getMarkAtIndex(index);
@@ -65,11 +65,24 @@ gung.Model = class {
      * `async`-`await` syntax before finally passing
      * in the "ready" data to the `constructor`.
      */
+    // https://dev.to/somedood/the-proper-way-to-write-async-constructors-in-javascript-1o8c
     static async fetchModel() {
         // Perform `async` stuff here...
-        const response = await fetch("http://localhost:3000/send_meals/1");
-        // Invoke the private constructor...
-        return new gung.Model(await response.json());
+        let response = {};
+        try {
+            response = await fetch("http://localhost:3000/get_meals/0", {
+                // mode: 'no-cors',
+                method: 'GET',
+                headers: {
+                        "Content-Type": "application/json"
+                }
+            });
+        } catch(err) {
+            alert(err); // Failed to fetch
+        }
+        let test = await response.json();
+        console.log("Contents: "+test);
+        return new gung.Model(JSON.stringify(test));
     }
 }
 

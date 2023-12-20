@@ -1,5 +1,3 @@
-import { displayPartsToString, getDefaultLibFileName } from "typescript";
-
 console.log("Hello Bon");
 
 var express = require('express');
@@ -303,6 +301,7 @@ router.put('/load_meals/:daysAgo',async function(req:any,res:any) {
 
     if (daysAgo < -1) {
         res.send("Invalid day: "+daysAgo);
+        return;
     }
     // Since summer registrations are over and the public site will be aimed at potential new students, it'll switch over in May to the next school year.
     // Before April it will probably not have switched and therefore the next year will not yet be valid.
@@ -320,13 +319,17 @@ router.put('/load_meals/:daysAgo',async function(req:any,res:any) {
     });
 });
 
-router.get('/send_meals/:daysAgo/', async function(req:any, res:any) {
+// Supporting CORS: https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
+// https://stackoverflow.com/questions/18498726/how-do-i-get-the-domain-originating-the-request-in-express-js
+router.get('/get_meals/:daysAgo/', async function(req:any, res:any) {
     let daysAgo:number = req.params.daysAgo;
     if (daysAgo < -1) {
         res.send("Invalid day: "+daysAgo);
+        return;
     }
     if (await inArchive(daysAgo)) {
         res.send(await readMeal(daysAgo));
+        return;
     }
     // Since summer registrations are over and the public site will be aimed at potential new students, it'll switch over in May to the next school year.
     // Before April it will probably not have switched and therefore the next year will not yet be valid.
@@ -337,6 +340,7 @@ router.get('/send_meals/:daysAgo/', async function(req:any, res:any) {
     fs.writeFile("files/menu.json",JSON.stringify(menu),function(err:any,buf:any) {
         if(err) {
             res.send("meal not found, error writing to DB: ", err);
+            return;
         } else {
         }
     });
