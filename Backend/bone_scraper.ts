@@ -144,6 +144,7 @@ async function getMeals(daysAgo:number,chosen:Set<meals>,menu:any):Promise<Food[
     const page = await browser.newPage();
     // Bon site
     await page.goto(bonSite(daysAgo), { timeout: 30000 } );
+    console.log("Site visited: "+bonSite(daysAgo));
     await page.screenshot({path: 'files/screenshot1.png'});
 
     let toRet:Food[] = [];
@@ -159,6 +160,7 @@ async function getMeals(daysAgo:number,chosen:Set<meals>,menu:any):Promise<Food[
     let mealstrings:Set<string> = new Set<string>();
     for (const value of chosen) {
         mealstrings.add(meals[value]);
+        console.log("Meals: "+meals[value]);
     }
     for (let i:number = 0; i < meals.length; i++) {
         let mealstr = meals[i];
@@ -178,6 +180,7 @@ async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any)
         const id = ( await page.evaluate((el: { getAttribute: (arg0: string) => any; }) => el.getAttribute("data-id"), nn[i]));
         // console.log("data id: "+id);
         const name = menu[id]["label"];
+        // console.log(name);
         if ("nutrition_details" in menu[id] && Object.keys(menu[id]["nutrition_details"]).length > 0) {
             const calories = menu[id]["nutrition_details"]["calories"]["value"];
             const carbs = menu[id]["nutrition_details"]["carbohydrateContent"]["value"];
@@ -186,6 +189,8 @@ async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any)
             const servingSize = menu[id]["nutrition_details"]["servingSize"]["value"];
             const servingUnits = menu[id]["nutrition_details"]["servingSize"]["unit"];
             toRet.push(food_factory(id,name,calories,carbs,rote,phat,meal,tier,servingSize,servingUnits));
+        } else {
+            toRet.push(food_factory(id,name,0,0,0,0,meal,tier,0,""));
         }
     }
 }

@@ -63,15 +63,17 @@ gung.FoodController = class {
         let board = this.model.getBoard();
         for (const property in board) {
             const fS = board[property]; // foodSquare
-			// const mq = rhit.fbCalendarManager.getCalendarAtIndex(i);
-            const newSquare = this._createSquare(fS);
-			// const newCard = this._createCard(mq);
-			// newCard.onclick = (event) => {
-			// 	console.log(`you clicked on ${mq.id}`);
-			// 	window.location.href = `/calendarDetail.html?id=${mq.id}`; //TODO GO HERE FOR Path Update
-			// }
-            newBoard.appendChild(newSquare);
-			// newList.appendChild(newCard);
+            if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+                // const mq = rhit.fbCalendarManager.getCalendarAtIndex(i);
+                const newSquare = this._createSquare(fS);
+                // const newCard = this._createCard(mq);
+                // newCard.onclick = (event) => {
+                // 	console.log(`you clicked on ${mq.id}`);
+                // 	window.location.href = `/calendarDetail.html?id=${mq.id}`; //TODO GO HERE FOR Path Update
+                // }
+                newBoard.appendChild(newSquare);
+                // newList.appendChild(newCard);
+            }
         }
         const oldBoard = document.querySelector("#foods");
 		// const oldList = document.querySelector("#mainCalendarPage");
@@ -79,7 +81,8 @@ gung.FoodController = class {
 		// oldList.removeAttribute("id");
         oldBoard.hidden = true;
 		// oldList.hidden = true;
-        oldBoard.parentElement.appendChild(newBoard);
+        oldBoard.parentElement.prepend(newBoard);
+        oldBoard.parentElement.removeChild(oldBoard);
 		// oldList.parentElement.appendChild(newList);
     }
     _createSquare(fs) {
@@ -149,7 +152,7 @@ gung.Model = class {
         // Perform `async` stuff here...
         let response = {};
         try {
-            response = await fetch("http://"+gung.apiUrl+"/"+gung.mealPath+"/0/0", {
+            response = await fetch("http://"+gung.apiUrl+"/"+gung.mealPath+"/-1/1", {
                 // mode: 'no-cors',
                 method: 'GET',
                 headers: {
