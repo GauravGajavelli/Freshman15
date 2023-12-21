@@ -190,7 +190,7 @@ async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any)
             const servingUnits = menu[id]["nutrition_details"]["servingSize"]["unit"];
             toRet.push(food_factory(id,name,calories,carbs,rote,phat,meal,tier,servingSize,servingUnits));
         } else {
-            toRet.push(food_factory(id,name,0,0,0,0,meal,tier,0,""));
+            toRet.push(food_factory(id,name,0,0,0,0,meal,tier,0,"")); // Southwest Beef Bowl case
         }
     }
 }

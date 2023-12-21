@@ -84,5 +84,6 @@ The goal is to follow this advice: https://www.youtube.com/watch?v=LBc8bXoK61Y
 - Use a folder for it
 - Jest, Mocha, seem good
 - I should do TDD
+- Bugs: SOUTHWEST BEEF BOWL CASE 12-22-23 LUNCH, IDENTIFY WHY THE NUTRITION DETAILS ARE MISSING (POTENTIALLY DUE TO THE VARIABILITY OF THE ITEM)
 6. Maintenance
 - Hmm
