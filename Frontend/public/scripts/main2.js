@@ -1,13 +1,35 @@
+// When adding new stuff
+    // 1. add it to the model first
+    // 2. then create the view
+
 /** namespace. */
 var gung = gung || {};
  
 /** globals */
 gung.variableName = "";
+gung.apiUrl = "localhost:3000";
+gung.mealPath = "get_meal";
 
 /** function and class syntax examples */
 gung.functionName = function () {
 	/** function body */
 };
+
+gung.htmlToElement = function(html) {
+	var template = document.createElement("template");
+	html = html.trim();
+	template.innerHTML = html;
+	return template.content.firstChild;
+}
+
+gung.FoodSquare = class {
+    constructor(foodo) {
+        this.food = foodo;
+        this.required = false;
+        this.banned = false;
+        this.quantity = 0;
+    }
+}
 
 // Controller
     // Updates the view/model
@@ -35,12 +57,65 @@ gung.FoodController = class {
         return new gung.FoodController(model);
     }
     updateView() {
-		const food = document.querySelector("#fuwafuwa");
-		// forEach receives a function
-		// squares.forEach((square, index) => {
-		// 	square.innerHTML = this.game.getMarkAtIndex(index);
-		// });
-		food.innerHTML = this.model.foods;
+		// const food = document.querySelector("#fuwafuwa");
+		// food.innerHTML = this.model.foods;
+        const newBoard = gung.htmlToElement('<div class="flex-container" id="foods"></div>');
+        let board = this.model.getBoard();
+        for (const property in board) {
+            const fS = board[property]; // foodSquare
+			// const mq = rhit.fbCalendarManager.getCalendarAtIndex(i);
+            const newSquare = this._createSquare(fS);
+			// const newCard = this._createCard(mq);
+			// newCard.onclick = (event) => {
+			// 	console.log(`you clicked on ${mq.id}`);
+			// 	window.location.href = `/calendarDetail.html?id=${mq.id}`; //TODO GO HERE FOR Path Update
+			// }
+            newBoard.appendChild(newSquare);
+			// newList.appendChild(newCard);
+        }
+        const oldBoard = document.querySelector("#foods");
+		// const oldList = document.querySelector("#mainCalendarPage");
+        oldBoard.removeAttribute("id");
+		// oldList.removeAttribute("id");
+        oldBoard.hidden = true;
+		// oldList.hidden = true;
+        oldBoard.parentElement.appendChild(newBoard);
+		// oldList.parentElement.appendChild(newList);
+    }
+    _createSquare(fs) {
+        if (fs.banned) {
+            return gung.htmlToElement(`
+            <div class="flex-item"><h1>${fs.food["label"]}</h1>
+            <button>
+              Add Back
+            </button>
+            </div>
+            `);
+        } else if (fs.required) {
+            return gung.htmlToElement(`
+            <div class="flex-item"><h1>${fs.food["label"]}</h1>
+            <span>
+              <span>
+                <input type="number" id="quantity" min="1" value="${fs.quantity}"/>
+              </span>
+              <button>
+                Remove
+              </button>
+            </span>
+            </div>
+            `);
+        } else {
+            return gung.htmlToElement(`
+            <div class="flex-item"><h1>${fs.food["label"]}</h1>
+            <button>
+              Add
+            </button>
+            <button>
+              Remove
+            </button>
+            </div>
+            `);
+        }
     }
 }
 
@@ -49,10 +124,14 @@ gung.FoodController = class {
 gung.Model = class {
     constructor(foodo) {
 		// TODO: Make instance variables
-		this.foods = foodo;
-		// for (let k = 0; k < 9; k++ ) {
-		// 	this.board.push(rhit.Game.Mark.NONE);
-		// }
+		this.foods = foodo; // gets the object
+        console.log(this.foods);
+        this.board = {};
+		for (const property in this.foods) {
+			this.board[this.foods[property]["label"]] = new gung.FoodSquare(this.foods[property]);
+            // console.log("Own kung: "+this.foods[property]);
+            // console.log(new gung.FoodSquare());
+		}
 		// console.log('this.board = ', this.board);
 		// console.log('this.state :>> ', this.state);
     }
@@ -70,7 +149,7 @@ gung.Model = class {
         // Perform `async` stuff here...
         let response = {};
         try {
-            response = await fetch("http://localhost:3000/get_meals/0", {
+            response = await fetch("http://"+gung.apiUrl+"/"+gung.mealPath+"/0/0", {
                 // mode: 'no-cors',
                 method: 'GET',
                 headers: {
@@ -82,10 +161,12 @@ gung.Model = class {
         }
         let test = await response.json();
         console.log("Contents: "+test);
-        return new gung.Model(JSON.stringify(test));
+        return new gung.Model(test);
+    }
+    getBoard() {
+        return this.board;
     }
 }
-
 
 gung.initializePage = async function () {
 	if (document.querySelector("#mainPage")) {

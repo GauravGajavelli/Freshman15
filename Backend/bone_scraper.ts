@@ -22,12 +22,18 @@ enum foodTier {
     Additional,
     Condiment
 }
+enum meals {
+    Breakfast = 0,
+    Lunch,
+    Dinner 
+}
 type Food = {    
     "id": number,
     "label": string,
     "description": string,
     "short_name": string,
     "raw_cooked": number,
+    "meal":meals,
     "tier":foodTier,
     "nutrition": {
         "kcal": number,
@@ -64,13 +70,14 @@ type Food = {
     "monotony": {}
 }
 // Returns specific sections of courses 
-function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, tear:foodTier, servingSize:number,servingUnits:string):Food {
+function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:meals,tear:foodTier, servingSize:number,servingUnits:string):Food {
     const toRet: Food = {
         id: id,
         label: name,
         description: "string",
         short_name: "string",
         raw_cooked: 1010101,
+        meal:melie,
         tier:tear,
         nutrition: {
             kcal: calories,
@@ -130,7 +137,8 @@ async function bonSiteUp():Promise<string> {
 }
 // Returns a list of foods from the site daysAgo number of days ago
 // NOTE: Only call after you've downloaded menu
-async function getMeals(daysAgo:number,menu:any):Promise<Food[]> {
+// Chosen is an array of valid meal indices
+async function getMeals(daysAgo:number,chosen:Set<meals>,menu:any):Promise<Food[]> {
     // puppeteering
     const browser = await puppeteer.launch({headless: "new"});
     const page = await browser.newPage();
@@ -148,16 +156,23 @@ async function getMeals(daysAgo:number,menu:any):Promise<Food[]> {
 
     // document.querySelector("#breakfast .site-panel__daypart-tabs [data-key-index='0'] .h4")
     let meals:string[] = ["breakfast", "lunch", "dinner"];
+    let mealstrings:Set<string> = new Set<string>();
+    for (const value of chosen) {
+        mealstrings.add(meals[value]);
+    }
     for (let i:number = 0; i < meals.length; i++) {
-        let meal:string = meals[i];
-        await getFoods(page, meal,foodTier.Special, toRet,menu);
-        await getFoods(page, meal,foodTier.Additional, toRet,menu);
-        await getFoods(page, meal,foodTier.Condiment, toRet,menu);
+        let mealstr = meals[i];
+        if (mealstrings.has(mealstr)) { // if it's one of the meals specified
+            await getFoods(page, i,foodTier.Special, toRet,menu);
+            await getFoods(page, i,foodTier.Additional, toRet,menu);
+            await getFoods(page, i,foodTier.Condiment, toRet,menu);
+        }
     }
     return toRet;
 }
-async function getFoods(page:any,meal:string,tier:foodTier,toRet:Food[],menu:any):Promise<void> {
-    const nn = await page.$$("#"+meal+" .site-panel__daypart-tabs [data-key-index='"+tier+"'] .h4"); // all foods in the meal
+async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any):Promise<void> {
+    let meals:string[] = ["breakfast", "lunch", "dinner"];
+    const nn = await page.$$("#"+meals[meal]+" .site-panel__daypart-tabs [data-key-index='"+tier+"'] .h4"); // all foods in the meal
     for (let i = 0; i < nn.length; i++) {
         // function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, tear:foodTier, servingSize:number,servingUnits:string):Food {
         const id = ( await page.evaluate((el: { getAttribute: (arg0: string) => any; }) => el.getAttribute("data-id"), nn[i]));
@@ -170,7 +185,7 @@ async function getFoods(page:any,meal:string,tier:foodTier,toRet:Food[],menu:any
             const phat = menu[id]["nutrition_details"]["fatContent"]["value"];
             const servingSize = menu[id]["nutrition_details"]["servingSize"]["value"];
             const servingUnits = menu[id]["nutrition_details"]["servingSize"]["unit"];
-            toRet.push(food_factory(id,name,calories,carbs,rote,phat,tier,servingSize,servingUnits));
+            toRet.push(food_factory(id,name,calories,carbs,rote,phat,meal,tier,servingSize,servingUnits));
         }
     }
 }
@@ -209,9 +224,9 @@ async function getMenu(daysAgo:number):Promise<string> {
     let endDex = script.indexOf("Bamco.cor_icons")-6;
     return script.substring(startDex,endDex);
 }
-async function writeMeals(daysAgo:number,meals:Food[]) {
+async function writeMeals(daysAgo:number,meals:Food[],chosen:Set<meals>) {
     let filepath = "files/";
-    let filename = formattedDate(daysAgo)+"_meals";
+    let filename = Array.from(chosen).join('-')+"-"+formattedDate(daysAgo)+"_meals";
     let data = meals;
     let dir_exists = fs.existsSync(filepath);
     if (!dir_exists) { // If the directory already exists
@@ -226,16 +241,16 @@ async function writeMeals(daysAgo:number,meals:Food[]) {
     });
 }
 // Returns if DB/file storage for having the value
-async function inArchive(daysAgo:number):Promise<Boolean> {
+async function inArchive(daysAgo:number,chosen:Set<meals>):Promise<Boolean> {
     let filepath = "files/";
-    let filename = formattedDate(daysAgo)+"_meals";
+    let filename = Array.from(chosen).join('-')+"-"+formattedDate(daysAgo)+"_meals";
     return fs.existsSync(filepath+filename+".json");
 }
 
 // Only call if the meal is in the archive
-async function readMeal(daysAgo:number):Promise<String> {
+async function readMeal(daysAgo:number,chosen:Set<meals>):Promise<String> {
     let filepath = "files/";
-    let filename = formattedDate(daysAgo)+"_meals";
+    let filename = Array.from(chosen).join('-')+"-"+formattedDate(daysAgo)+"_meals";
     return await JSON.parse(await fs.promises.readFile(filepath+filename+".json"));
 }
 
@@ -308,8 +323,12 @@ router.put('/load_meals/:daysAgo',async function(req:any,res:any) {
 
     let menu = await JSON.parse(await getMenu(daysAgo));
     // let 
-    let toWrite:Food[] = await getMeals(daysAgo,menu);
-    await writeMeals(daysAgo,toWrite);
+    let mealSet = new Set<meals>();
+    mealSet.add(meals.Breakfast);
+    mealSet.add(meals.Lunch);
+    mealSet.add(meals.Dinner);
+    let toWrite:Food[] = await getMeals(daysAgo,mealSet,menu);
+    await writeMeals(daysAgo,toWrite,mealSet);
     fs.writeFile("files/menu.json",JSON.stringify(menu),function(err:any,buf:any) {
         if(err) {
             res.send("error writing: ", err);
@@ -321,22 +340,25 @@ router.put('/load_meals/:daysAgo',async function(req:any,res:any) {
 
 // Supporting CORS: https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
 // https://stackoverflow.com/questions/18498726/how-do-i-get-the-domain-originating-the-request-in-express-js
-router.get('/get_meals/:daysAgo/', async function(req:any, res:any) {
+// Meal number denotes which specific meal you are retrieving
+router.get('/get_meal/:daysAgo/:mealNumber', async function(req:any, res:any) {
     let daysAgo:number = req.params.daysAgo;
     if (daysAgo < -1) {
         res.send("Invalid day: "+daysAgo);
         return;
     }
-    if (await inArchive(daysAgo)) {
-        res.send(await readMeal(daysAgo));
+    let mealSet = new Set<meals>();
+    mealSet.add(req.params.mealNumber); // turns it into breakfast, lunch, or dinner
+    if (await inArchive(daysAgo,mealSet)) {
+        res.send(await readMeal(daysAgo,mealSet));
         return;
     }
     // Since summer registrations are over and the public site will be aimed at potential new students, it'll switch over in May to the next school year.
     // Before April it will probably not have switched and therefore the next year will not yet be valid.
 
     let menu = await JSON.parse(await getMenu(daysAgo));
-    let toWrite:Food[] = await getMeals(daysAgo,menu);
-    await writeMeals(daysAgo,toWrite);
+    let toWrite:Food[] = await getMeals(daysAgo,mealSet,menu);
+    await writeMeals(daysAgo,toWrite,mealSet);
     fs.writeFile("files/menu.json",JSON.stringify(menu),function(err:any,buf:any) {
         if(err) {
             res.send("meal not found, error writing to DB: ", err);
@@ -344,7 +366,7 @@ router.get('/get_meals/:daysAgo/', async function(req:any, res:any) {
         } else {
         }
     });
-    res.send(await readMeal(daysAgo));
+    res.send(await readMeal(daysAgo,mealSet));
 });
 
 module.exports = router;
