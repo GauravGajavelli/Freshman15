@@ -80,6 +80,9 @@
 .added {
     color: red;
 }
+.nutritionless {
+    background-color: lightcoral;
+}
 #quantity {
     font-size: 1em;
 }

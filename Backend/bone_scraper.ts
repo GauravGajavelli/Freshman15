@@ -35,6 +35,7 @@ type Food = {
     "raw_cooked": number,
     "meal":meals,
     "tier":foodTier,
+    "nutritionless":boolean,
     "nutrition": {
         "kcal": number,
         "well_being": number,
@@ -70,7 +71,7 @@ type Food = {
     "monotony": {}
 }
 // Returns specific sections of courses 
-function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:meals,tear:foodTier, servingSize:number,servingUnits:string):Food {
+function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:meals,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean):Food {
     const toRet: Food = {
         id: id,
         label: name,
@@ -79,6 +80,7 @@ function food_factory (id: number, name: string, calories:number, carbs: number,
         raw_cooked: 1010101,
         meal:melie,
         tier:tear,
+        nutritionless:nutritionl,
         nutrition: {
             kcal: calories,
             well_being: 1010101,
@@ -188,9 +190,9 @@ async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any)
             const phat = menu[id]["nutrition_details"]["fatContent"]["value"];
             const servingSize = menu[id]["nutrition_details"]["servingSize"]["value"];
             const servingUnits = menu[id]["nutrition_details"]["servingSize"]["unit"];
-            toRet.push(food_factory(id,name,calories,carbs,rote,phat,meal,tier,servingSize,servingUnits));
+            toRet.push(food_factory(id,name,calories,carbs,rote,phat,meal,tier,servingSize,servingUnits,false));
         } else {
-            toRet.push(food_factory(id,name,0,0,0,0,meal,tier,0,"")); // Southwest Beef Bowl case
+            toRet.push(food_factory(id,name,0,0,0,0,meal,tier,0,"",true)); // Southwest Beef Bowl case
         }
     }
 }

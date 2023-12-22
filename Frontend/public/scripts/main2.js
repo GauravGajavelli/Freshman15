@@ -38,10 +38,9 @@ gung.FoodSquare = class {
 gung.FoodController = class {
 	constructor(modelo) {
         this.model = modelo;
-        // Prolly just get the 
-		// const foods = document.querySelectorAll(".square");
-        // for (const square of squares) {
-		// 	square.onclick = (event) => {
+        const foods = document.querySelectorAll("#foods .flex-item");
+		// for (const food of foods) {
+		// 	food.onclick = (event) => {
 		// 		const buttonIndex = parseInt(square.dataset.buttonIndex);
 		// 		// console.log("buttonIndex", buttonIndex);
 		// 		// console.log(typeof(buttonIndex));
@@ -57,7 +56,11 @@ gung.FoodController = class {
         return new gung.FoodController(model);
     }
     updateView() {
-		// const food = document.querySelector("#fuwafuwa");
+        console.log("Updating view");
+        this._updateBoard();
+    }
+    _updateBoard() {
+        // const food = document.querySelector("#fuwafuwa");
 		// food.innerHTML = this.model.foods;
         const newBoard = gung.htmlToElement('<div class="flex-container" id="foods"></div>');
         let board = this.model.getBoard();
@@ -67,10 +70,7 @@ gung.FoodController = class {
                 // const mq = rhit.fbCalendarManager.getCalendarAtIndex(i);
                 const newSquare = this._createSquare(fS);
                 // const newCard = this._createCard(mq);
-                // newCard.onclick = (event) => {
-                // 	console.log(`you clicked on ${mq.id}`);
-                // 	window.location.href = `/calendarDetail.html?id=${mq.id}`; //TODO GO HERE FOR Path Update
-                // }
+                this._setUpClick(newSquare,fS);
                 newBoard.appendChild(newSquare);
                 // newList.appendChild(newCard);
             }
@@ -88,7 +88,7 @@ gung.FoodController = class {
     _createSquare(fs) {
         if (fs.banned) {
             return gung.htmlToElement(`
-            <div class="flex-item"><h1>${fs.food["label"]}</h1>
+            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}"><h1>${fs.food["label"]}</h1>
             <button>
               Add Back
             </button>
@@ -96,10 +96,10 @@ gung.FoodController = class {
             `);
         } else if (fs.required) {
             return gung.htmlToElement(`
-            <div class="flex-item"><h1>${fs.food["label"]}</h1>
+            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}"><h1>${fs.food["label"]}</h1>
             <span>
               <span>
-                <input type="number" id="quantity" min="1" value="${fs.quantity}"/>
+                <input type="number" id="quantity" min="1" value="1"/>
               </span>
               <button>
                 Remove
@@ -109,7 +109,7 @@ gung.FoodController = class {
             `);
         } else {
             return gung.htmlToElement(`
-            <div class="flex-item"><h1>${fs.food["label"]}</h1>
+            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}"><h1>${fs.food["label"]}</h1>
             <button>
               Add
             </button>
@@ -120,6 +120,119 @@ gung.FoodController = class {
             `);
         }
     }
+    _createItem(fs) { // Creates a list item, based on the list type
+        if (fs.banned) {
+            return gung.htmlToElement(`
+            <div id="f${fs.food["id"]}" class="removed flex-container5">
+            <span>${fs.food["label"]}</span>
+            <button>X</button>
+            </div>
+            `);
+        } else if (fs.required) {
+            return gung.htmlToElement(`
+            <div id="f${fs.food["id"]}" class="added flex-container5">
+            <span>${fs.food["label"]}</span>
+            <button>X</button>
+            </div>
+            `);
+        } else { // neither banned nor required: a final meal item
+            return gung.htmlToElement(`
+            <div id="f${fs.food["id"]}" class="flex-container5">
+            <span>${fs.food["label"]}</span>
+            <button>X</button>
+            </div>
+            `);
+        }
+    }
+    _setUpClick(square,fs) {
+        if (fs.banned) {
+            // return gung.htmlToElement(`
+            // <div class="flex-item"><h1>${fs.food["label"]}</h1>
+            // <button>
+            //   Add Back
+            // </button>
+            // </div>
+            // `);
+            square.children[1].onclick = (event) => {
+                // Prolly need to do some model stuff
+                // this.game.pressedButtonAtIndex(buttonIndex);
+                fs.banned = false;
+                    const oldBans = document.querySelector("#banned");
+                    const item = document.querySelector(`#banned #f${fs.food["id"]}`);
+                    oldBans.removeChild(item);                
+                this.updateView();
+            };
+        } else if (fs.required) {
+            // return gung.htmlToElement(`
+            // <div class="flex-item"><h1>${fs.food["label"]}</h1>
+            // <span>
+            //   <span>
+            //     <input type="number" id="quantity" min="1" value="${fs.quantity}"/>
+            //   </span>
+            //   <button>
+            //     Remove
+            //   </button>
+            // </span>
+            // </div>
+            // `);
+            square.children[1].children[1].onclick = (event) => {
+                // Prolly need to do some model stuff
+                // this.game.pressedButtonAtIndex(buttonIndex);
+                fs.required = false;
+                    const oldReqs = document.querySelector("#required");
+                    const item = document.querySelector(`#required #f${fs.food["id"]}`);
+                    oldReqs.removeChild(item);
+                this.updateView();
+            };
+            // TODO Set up click stuff
+        } else { // neither banned nor required
+            // return gung.htmlToElement(`
+            // <div class="flex-item"><h1>${fs.food["label"]}</h1>
+            // <button>
+            //   Add
+            // </button>
+            // <button>
+            //   Remove
+            // </button>
+            // </div>
+            // `);
+            square.children[1].onclick = (event) => {
+                // Prolly need to do some model stuff
+                // this.game.pressedButtonAtIndex(buttonIndex);
+                fs.required = true;
+                    const oldReqs = document.querySelector("#required");
+                    const newReq = this._createItem(fs);
+                    this._setUpDelete(newReq,fs);
+                    oldReqs.append(newReq);
+                this.updateView();
+            };
+            square.children[2].onclick = (event) => {
+                // Prolly need to do some model stuff
+                // this.game.pressedButtonAtIndex(buttonIndex);
+                fs.banned = true;
+                    const oldBans = document.querySelector("#banned");
+                    const newBan = this._createItem(fs);
+                    this._setUpDelete(newBan,fs);
+                    oldBans.appendChild(newBan);
+                this.updateView();
+            };
+        }
+    }
+    _setUpDelete(item,fs) { // adds a delete click listener for a list item
+        item.children[1].onclick = (event) => {
+            console.log("tried to delete");
+            // Prolly need to do some model stuff
+            // this.game.pressedButtonAtIndex(buttonIndex);
+            const oldList = document.querySelector(`#${fs.banned?"banned":"required"}`); // Assumes banned if not required because in list
+            if (fs.banned) {
+                fs.banned = false;
+            } else if (fs.required) {
+                fs.required = false;
+            }
+            oldList.removeChild(item);
+            this.updateView();
+        };
+    }
 }
 
 // Model
@@ -128,7 +241,6 @@ gung.Model = class {
     constructor(foodo) {
 		// TODO: Make instance variables
 		this.foods = foodo; // gets the object
-        console.log(this.foods);
         this.board = {};
 		for (const property in this.foods) {
 			this.board[this.foods[property]["label"]] = new gung.FoodSquare(this.foods[property]);
@@ -152,7 +264,7 @@ gung.Model = class {
         // Perform `async` stuff here...
         let response = {};
         try {
-            response = await fetch("http://"+gung.apiUrl+"/"+gung.mealPath+"/-1/1", {
+            response = await fetch("http://"+gung.apiUrl+"/"+gung.mealPath+"/0/0", {
                 // mode: 'no-cors',
                 method: 'GET',
                 headers: {
@@ -162,9 +274,7 @@ gung.Model = class {
         } catch(err) {
             alert(err); // Failed to fetch
         }
-        let test = await response.json();
-        console.log("Contents: "+test);
-        return new gung.Model(test);
+        return new gung.Model(await response.json());
     }
     getBoard() {
         return this.board;

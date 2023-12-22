@@ -85,5 +85,13 @@ The goal is to follow this advice: https://www.youtube.com/watch?v=LBc8bXoK61Y
 - Jest, Mocha, seem good
 - I should do TDD
 - Bugs: SOUTHWEST BEEF BOWL CASE 12-22-23 LUNCH, IDENTIFY WHY THE NUTRITION DETAILS ARE MISSING (POTENTIALLY DUE TO THE VARIABILITY OF THE ITEM)
+  - Make elements red if they have this flag, add a separate display if needed for this type
+  - Okay asking chatgpt about the red ones ahead of time seems like a plausible strategy, I just need to run it at like midnight
+    - The vegetarian label seems mostly accurate but for the foods that it's not on, if there's a description then that's typically a good indicator or whether it's edible for them. Just create alternate versions of the meal for the different intersections of dietary preferences, e.g., vegetarian, vegan, gluten-free like so and using the description
+    - "Based on the following food name, provide a nutritional breakdown of half a standard plate of the item by a specified serving: "southwest beef bowl", given the following description: "southwest braised beef, braised beans, steamed rice, steamed corn, salsa, sour cream, lettuce, diced tomato, and jalapeno", for a vegan. Only the ingredients in the description can be used as substitutes"
+      - Keep iteratively improving prompt
+  - Should be able to filter by daily special,  additional, etc.
+  - For the red ones, do a little fake loading thing, and put a chatgpt logo on the bottom and turn them from red to green as the results are "gotten" from chatgpt (they're already there)
+- Also use chatgot for serving sizes (use the ladel or plate portion of deck of cards width with visualization) depending on the more appropriate serving size
 6. Maintenance
 - Hmm
