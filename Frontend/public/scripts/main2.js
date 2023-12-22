@@ -57,9 +57,6 @@ gung.FoodController = class {
     }
     updateView() {
         console.log("Updating view");
-        this._updateBoard();
-    }
-    _updateBoard() {
         // const food = document.querySelector("#fuwafuwa");
 		// food.innerHTML = this.model.foods;
         const newBoard = gung.htmlToElement('<div class="flex-container" id="foods"></div>');
@@ -213,7 +210,7 @@ gung.FoodController = class {
                     const oldBans = document.querySelector("#banned");
                     const newBan = this._createItem(fs);
                     this._setUpDelete(newBan,fs);
-                    oldBans.appendChild(newBan);
+                    oldBans.append(newBan);
                 this.updateView();
             };
         }

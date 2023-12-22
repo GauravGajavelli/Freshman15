@@ -31,7 +31,7 @@
     display: flex;
     flex-direction: row;
     text-align: center;
-    justify-content: space-evenly;
+    justify-content: right;
 }
 .flex-container6 {
     display: flex;
@@ -88,6 +88,9 @@
 }
 .flex-container7 h4 {
     margin: 5px;
+}
+#lists button {
+    margin-left: 5px;
 }
 
 /* // Extra small devices (portrait phones, less than 576px) */
