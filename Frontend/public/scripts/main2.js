@@ -1,14 +1,21 @@
 // When adding new stuff
-    // 1. add it to the model first
-    // 2. then create the view
+    // 1. add it to the model first (prolly uses backend connectivity)
+    // 2. then add to the view (since you need to interface with the model)
+
+/** jquery */
+var script = document.createElement('script');
+script.src = 'https://code.jquery.com/jquery-3.6.3.min.js'; // Check https://jquery.com/ for the current version
+document.getElementsByTagName('head')[0].appendChild(script);
 
 /** namespace. */
 var gung = gung || {};
- 
+
 /** globals */
 gung.variableName = "";
 gung.apiUrl = "localhost:3000";
 gung.mealPath = "get_meal";
+gung.dayCheck = "check_day";
+gung.mealCheck = "check_meal";
 
 /** function and class syntax examples */
 gung.functionName = function () {
@@ -38,7 +45,7 @@ gung.FoodSquare = class {
 gung.FoodController = class {
 	constructor(modelo) {
         this.model = modelo;
-        const foods = document.querySelectorAll("#foods .flex-item");
+        // const foods = document.querySelectorAll("#foods .flex-item");
 		// for (const food of foods) {
 		// 	food.onclick = (event) => {
 		// 		const buttonIndex = parseInt(square.dataset.buttonIndex);
@@ -48,6 +55,13 @@ gung.FoodController = class {
 		// 		this.updateView();
 		// 	};
 		// }
+        this.updateList();
+        const dates = document.querySelectorAll(`#date-select option`);
+		for (const date of dates) {
+			date.change(function() {
+                console.log("heima");
+            });
+		}
         this.updateView();
 	}
     static async makeController() {
@@ -56,6 +70,21 @@ gung.FoodController = class {
         return new gung.FoodController(model);
     }
     updateView() {
+        this.updateBoard();
+    }
+    updateList() {
+        console.log("Updating list");
+        let meals = this.model.getCurrentMeals();
+        for (let i = 0; i <= 2; i++) {
+            if (!meals.has(i)) { // the meal is outside the ones specified
+                let curOption = document.querySelector(`#meal-select option[value='${i}']`);
+                curOption.hidden = true;
+                curOption.parentElement.removeChild(curOption);
+                console.log("Made invisible: "+i);
+            }
+        }
+    }
+    updateBoard() {
         console.log("Updating view");
         // const food = document.querySelector("#fuwafuwa");
 		// food.innerHTML = this.model.foods;
@@ -235,8 +264,11 @@ gung.FoodController = class {
 // Model
     // Talks to the backend to save/load data
 gung.Model = class {
-    constructor(foodo) {
+    constructor(foodo,dias,milos) {
 		// TODO: Make instance variables
+        this.curDay = 0; // Defeault: today. It's fine with invalid values, just displays text indicating as such
+        this.validDays = dias;
+        this.validMeals = milos; // It's not fine with invalid values, since the meals may not actually exist, unlike days
 		this.foods = foodo; // gets the object
         this.board = {};
 		for (const property in this.foods) {
@@ -246,6 +278,34 @@ gung.Model = class {
 		}
 		// console.log('this.board = ', this.board);
 		// console.log('this.state :>> ', this.state);
+    }
+
+    static async booleanVal(response) {
+        return (JSON.stringify(await response.json())) === 'true';
+    }
+
+    static async mealsForDay(day) {
+        let meals = new Set();
+        for (let m = 0; m <= 2; m++) { // meals
+            let validMeal = false;
+            try {
+                validMeal = await fetch(`http://${gung.apiUrl}/${gung.mealCheck}/${day}/${m}`, {
+                    // mode: 'no-cors',
+                    method: 'GET',
+                    headers: {
+                            "Content-Type": "application/json"
+                    }
+                });
+            } catch(err) {
+                alert(err); // Failed to fetch
+            }
+            let valMel = (await gung.Model.booleanVal(validMeal));
+            console.log("Valid meal?: "+valMel);
+            if (valMel) {
+                meals.add(m);
+            }
+        }
+        return meals;
     }
 
     /**
@@ -259,22 +319,56 @@ gung.Model = class {
     // https://dev.to/somedood/the-proper-way-to-write-async-constructors-in-javascript-1o8c
     static async fetchModel() {
         // Perform `async` stuff here...
-        let response = {};
-        try {
-            response = await fetch("http://"+gung.apiUrl+"/"+gung.mealPath+"/4/1", {
-                // mode: 'no-cors',
-                method: 'GET',
-                headers: {
-                        "Content-Type": "application/json"
-                }
-            });
-        } catch(err) {
-            alert(err); // Failed to fetch
+        let days = new Set(); // set of the available days
+        let meals = new Map(); // maps days to what meals are available, for when they get future options
+        for (let d = -1; d <= 1; d++) { // days
+            let validDay = false;
+            try {
+                validDay = await fetch(`http://${gung.apiUrl}/${gung.dayCheck}/${d}`, {
+                    // mode: 'no-cors',
+                    method: 'GET',
+                    headers: {
+                            "Content-Type": "application/json"
+                    }
+                });
+            } catch(err) {
+                alert(err); // Failed to fetch
+            }
+            meals.set(d,new Set());
+            let valdy = (await gung.Model.booleanVal(validDay));
+            console.log("Valid day?: "+valdy);
+            if (valdy) {
+                days.add(d);
+                meals.set(d, await gung.Model.mealsForDay(d));
+            }
         }
-        return new gung.Model(await response.json());
+        let meal = {};
+        if (meals.get(0).has(0)) { // breakfast was a valid meal
+            try {
+                meal = await fetch("http://"+gung.apiUrl+"/"+gung.mealPath+"/0/0", {
+                    // mode: 'no-cors',
+                    method: 'GET',
+                    headers: {
+                            "Content-Type": "application/json"
+                    }
+                });
+            } catch(err) {
+                alert(err); // Failed to fetch
+            }
+            return new gung.Model(await meal.json(),days,meals);
+        } else {
+            alert("There is no breakfast today");
+            return new gung.Model(false,days,meals);
+        }
     }
     getBoard() {
         return this.board;
+    }
+    getCurrentMeals() {
+        return this.validMeals.get(this.curDay);
+    }
+    getValidDays() {
+        return this.validDays;
     }
 }
 

@@ -357,6 +357,14 @@ router.get('/get_meal/:daysAgo/:mealNumber', async function(req:any, res:any) {
     });
     res.send(await readMeal(daysAgo,mealSet));
 });
+router.get('/check_day/:daysAgo/',async function(req:any,res:any) {
+    let daysAgo:number = req.params.daysAgo;
+    if (daysAgo < -1) {
+        res.send("Invalid day: "+daysAgo);
+        return;
+    }
+    res.send(await checkMenu(daysAgo));
+});
 router.get('/check_meal/:daysAgo/:mealNumber',async function(req:any,res:any) {
     // Check valid day
         // If invalid, then return false
