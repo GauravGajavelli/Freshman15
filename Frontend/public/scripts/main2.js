@@ -1,11 +1,14 @@
+// Refactor to minimize backend calls if caching doesn't speed up enough
+
 // When adding new stuff
     // 1. add it to the model first (prolly uses backend connectivity)
     // 2. then add to the view (since you need to interface with the model)
 
 /** jquery */
-var script = document.createElement('script');
-script.src = 'https://code.jquery.com/jquery-3.6.3.min.js'; // Check https://jquery.com/ for the current version
-document.getElementsByTagName('head')[0].appendChild(script);
+// var script = document.createElement('script');
+// script.src = 'https://code.jquery.com/jquery-3.6.3.min.js'; // Check https://jquery.com/ for the current version
+// document.getElementsByTagName('head')[0].appendChild(script);
+// console.log(script);
 
 /** namespace. */
 var gung = gung || {};
@@ -55,13 +58,27 @@ gung.FoodController = class {
 		// 		this.updateView();
 		// 	};
 		// }
+        // const dates = document.querySelectorAll(`#date-select option`);
+        document.querySelector("#date-select").onchange = async (event) => {
+            // THE ASYNC ARROW FUNCTION IS VERY IMPORTANT; 
+            let yourSelect = document.querySelector("#date-select");
+            let newDay = yourSelect.options[ yourSelect.selectedIndex ].value; // -1,0,1
+            console.log("Nude, ay: "+newDay);
+            await this.model.setDay(newDay); // get new board
+            this.updateList();
+            this.updateView();
+        };
+
+        document.querySelector("#meal-select").onchange = async (event) => {
+            // THE ASYNC ARROW FUNCTION IS VERY IMPORTANT; 
+            let yourSelect = document.querySelector("#meal-select");
+            let newMeal = yourSelect.options[ yourSelect.selectedIndex ].value; // -1,0,1
+            console.log("Nume, eel: "+newMeal);
+            await this.model.setMeal(newMeal); // get new board
+            this.updateList();
+            this.updateView();
+        };
         this.updateList();
-        const dates = document.querySelectorAll(`#date-select option`);
-		for (const date of dates) {
-			date.change(function() {
-                console.log("heima");
-            });
-		}
         this.updateView();
 	}
     static async makeController() {
@@ -74,13 +91,21 @@ gung.FoodController = class {
     }
     updateList() {
         console.log("Updating list");
+            const bOption = gung.htmlToElement(`<option value="0">Breakfast</option>`);
+            const lOption = gung.htmlToElement(`<option value="1">Lunch</option>`);
+            const dOption = gung.htmlToElement(`<option value="2">Dinner</option>`);
+        let options = [bOption,lOption,dOption];
+        let mealSelect = document.querySelector(`#meal-select`);
         let meals = this.model.getCurrentMeals();
+        console.log("Sheck it out, meals: "+meals);
         for (let i = 0; i <= 2; i++) {
-            if (!meals.has(i)) { // the meal is outside the ones specified
-                let curOption = document.querySelector(`#meal-select option[value='${i}']`);
-                curOption.hidden = true;
+            let curOption = document.querySelector(`#meal-select option[value='${i}']`);
+            if (curOption) { // if it is had
                 curOption.parentElement.removeChild(curOption);
-                console.log("Made invisible: "+i);
+            }
+            if (meals.has(i)) { // if it should be had
+                console.log("Made visible: "+i);
+                mealSelect.append(options[i]);
             }
         }
     }
@@ -266,10 +291,12 @@ gung.FoodController = class {
 gung.Model = class {
     constructor(foodo,dias,milos) {
 		// TODO: Make instance variables
-        this.curDay = 0; // Defeault: today. It's fine with invalid values, just displays text indicating as such
+        this.curDay = 0; // Defeault: today. It's fine with invalid values, just displays text indicating as such TODO REVERT TO 0
+        this.curMeal = 0;
         this.validDays = dias;
         this.validMeals = milos; // It's not fine with invalid values, since the meals may not actually exist, unlike days
-		this.foods = foodo; // gets the object
+
+        this.foods = foodo; // gets the object
         this.board = {};
 		for (const property in this.foods) {
 			this.board[this.foods[property]["label"]] = new gung.FoodSquare(this.foods[property]);
@@ -321,7 +348,9 @@ gung.Model = class {
         // Perform `async` stuff here...
         let days = new Set(); // set of the available days
         let meals = new Map(); // maps days to what meals are available, for when they get future options
-        for (let d = -1; d <= 1; d++) { // days
+        for (let i = 0; i <= 2; i++) { // days
+            let ds = [0,3,4];
+            let d = ds[i];
             let validDay = false;
             try {
                 validDay = await fetch(`http://${gung.apiUrl}/${gung.dayCheck}/${d}`, {
@@ -365,10 +394,69 @@ gung.Model = class {
         return this.board;
     }
     getCurrentMeals() {
-        return this.validMeals.get(this.curDay);
+        let arr = Array.from( this.validMeals.keys() );
+        let gurget = new Set();
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i] == this.curDay) {
+                console.log("glottal match, but real match: "+(arr[i] === this.curDay));
+                gurget = this.validMeals.get(arr[i]);
+            }else{
+                console.log("glottal not match, but real match: "+(arr[i] === this.curDay));
+            }
+        }
+        return gurget;
     }
     getValidDays() {
         return this.validDays;
+    }
+    async setDay(day) {
+        this.curDay = day;
+        await(this.setMeal(0));
+    }
+    async setMeal(meal) {
+        this.curMeal = meal;
+        console.log("cur day: "+this.curDay+", cur meal: "+this.curMeal);
+        console.log("curray: "+this.validMeals.get(this.curDay));
+        let arr = Array.from( this.validMeals.keys() );
+        let gurget = new Set();
+        for (let i = 0; i < arr.length; i++) {
+            console.log("# 2 Key val: "+arr[i]);
+            console.log("# 2 Key val val: "+this.validMeals.get(arr[i]));
+            let arr2 = Array.from(this.validMeals.get(arr[i]));
+            for (let j = 0; j < arr2.length; j++) {
+                console.log("# 2 curray val: "+arr2[j]);
+            }
+            if (arr[i] == this.curDay) {
+                console.log("match");
+                gurget = this.validMeals.get(arr[i]);
+            }else{
+                console.log("not match");
+            }
+        }
+        console.log("new gurget curray?: "+gurget);
+        if (gurget.has(this.curMeal)) { // breakfast was a valid meal
+            try {
+                meal = await fetch(`http://${gung.apiUrl}/${gung.mealPath}/${this.curDay}/${this.curMeal}`, {
+                    // mode: 'no-cors',
+                    method: 'GET',
+                    headers: {
+                            "Content-Type": "application/json"
+                    }
+                });
+            } catch(err) {
+                alert(err); // Failed to fetch
+            }
+        } else {
+            let mealstrs = ["breakfast", "lunch", "dinner"];
+            alert(`There is no ${mealstrs[this.curMeal]} today`);
+        }
+        this.foods = await meal.json();
+        this.board = {};
+		for (const property in this.foods) {
+			this.board[this.foods[property]["label"]] = new gung.FoodSquare(this.foods[property]);
+            // console.log("Own kung: "+this.foods[property]);
+            // console.log(new gung.FoodSquare());
+		}
     }
 }
 
