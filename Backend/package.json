@@ -14,6 +14,8 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "glpk.js": "^4.0.2",
+    "javascript-lp-solver": "^0.4.24",
     "luxon": "^3.4.4",
     "puppeteer": "^21.6.1"
   }

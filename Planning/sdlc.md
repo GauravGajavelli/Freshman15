@@ -93,5 +93,10 @@ The goal is to follow this advice: https://www.youtube.com/watch?v=LBc8bXoK61Y
   - Should be able to filter by daily special,  additional, etc.
   - For the red ones, do a little fake loading thing, and put a chatgpt logo on the bottom and turn them from red to green as the results are "gotten" from chatgpt (they're already there)
 - Also use chatgot for serving sizes (use the ladel or plate portion of deck of cards width with visualization) depending on the more appropriate serving size
+- Approximate linear algebra solver javascript
+  - Literally like 4 linear equations
+    - If it can converge quickly/or not then I can tell whether certain food combos work
+    - The trouble is efficiently selecting the 
+  - This is all I need for meal generation
 6. Maintenance
 - Hmm

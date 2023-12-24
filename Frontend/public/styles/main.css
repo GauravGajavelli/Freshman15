@@ -92,6 +92,12 @@
 #lists button {
     margin-left: 5px;
 }
+#lists .flex-container3 {
+    width: 30vw;
+}
+#bottomRow {
+    justify-content: left;
+}
 
 /* // Extra small devices (portrait phones, less than 576px) */
 /* // No media query since this is the default in Bootstrap */

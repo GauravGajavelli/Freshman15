@@ -261,7 +261,7 @@ gung.Model = class {
         // Perform `async` stuff here...
         let response = {};
         try {
-            response = await fetch("http://"+gung.apiUrl+"/"+gung.mealPath+"/0/0", {
+            response = await fetch("http://"+gung.apiUrl+"/"+gung.mealPath+"/4/1", {
                 // mode: 'no-cors',
                 method: 'GET',
                 headers: {
