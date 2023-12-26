@@ -70,7 +70,7 @@ type Food = {
     "sub_station_order": number,
     "monotony": {}
 }
-// Returns specific sections of courses 
+// Returns specific sections of courses
 function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:meals,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean):Food {
     const toRet: Food = {
         id: id,
@@ -140,13 +140,7 @@ async function bonSiteUp():Promise<string> {
 // Returns a list of foods from the site daysAgo number of days ago
 // NOTE: Only call after you've downloaded menu
 // Chosen is an array of valid meal indices
-async function getMeals(daysAgo:number,chosen:Set<meals>,menu:any):Promise<Food[]> {
-    // puppeteering
-    const browser = await puppeteer.launch({headless: "new"});
-    const page = await browser.newPage();
-    // Bon site
-    await page.goto(bonSite(daysAgo), { timeout: 30000 } );
-    console.log("Site visited: "+bonSite(daysAgo));
+async function getMeal(page:any,chosen:meals,menu:any):Promise<Food[]> {
     await page.screenshot({path: 'files/screenshot1.png'});
 
     let toRet:Food[] = [];
@@ -160,10 +154,8 @@ async function getMeals(daysAgo:number,chosen:Set<meals>,menu:any):Promise<Food[
     // document.querySelector("#breakfast .site-panel__daypart-tabs [data-key-index='0'] .h4")
     let meals:string[] = ["breakfast", "lunch", "dinner"];
     let mealstrings:Set<string> = new Set<string>();
-    for (const value of chosen) {
-        mealstrings.add(meals[value]);
-        console.log("Meals: "+meals[value]);
-    }
+    mealstrings.add(meals[chosen]);
+    console.log("Meals: "+meals[chosen]);
     for (let i:number = 0; i < meals.length; i++) {
         let mealstr = meals[i];
         if (mealstrings.has(mealstr)) { // if it's one of the meals specified
@@ -174,6 +166,7 @@ async function getMeals(daysAgo:number,chosen:Set<meals>,menu:any):Promise<Food[
     }
     return toRet;
 }
+// Pass in a page with foods to get
 async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any):Promise<void> {
     let meals:string[] = ["breakfast", "lunch", "dinner"];
     const nn = await page.$$("#"+meals[meal]+" .site-panel__daypart-tabs [data-key-index='"+tier+"'] .h4"); // all foods in the meal
@@ -182,6 +175,7 @@ async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any)
         const id = ( await page.evaluate((el: { getAttribute: (arg0: string) => any; }) => el.getAttribute("data-id"), nn[i]));
         // console.log("data id: "+id);
         const name = menu[id]["label"];
+        // console.log("fude name: "+name);
         // console.log(name);
         if ("nutrition_details" in menu[id] && Object.keys(menu[id]["nutrition_details"]).length > 0) {
             const calories = menu[id]["nutrition_details"]["calories"]["value"];
@@ -196,27 +190,10 @@ async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any)
         }
     }
 }
-// function hasNutrition (details:any):boolean {
-//     let keys = Object.keys(details);
-//     console.log("crimbo: "+keys);
-//     for (let i = 0; i < keys.length; i++) {
-//         // console.log("deets: "+Object.keys(details[keys[i]]));
-//         // console.log("gloeorm: "+details[keys[i]]["value"]);
-//         if (details[keys[i]] == null) {
-//             return false;
-//         }
-//     }
-//     return true;
-// }
-
+// Pass in a page with a valid menu
 // ASSUMPTION: the idea of getting the menu from days ago (and this does matter, as the IDs shift), hinges on them having giving us consistent menu IDs within each day's site
-// Returns a json of the menu with strings from the site daysAgo number of days ago
-async function getMenu(daysAgo:number):Promise<string> {
-    // puppeteering
-    const browser = await puppeteer.launch({headless: "new"});
-    const page = await browser.newPage();
-    // Bon site
-    await page.goto(bonSite(daysAgo), { timeout: 30000 } );
+// Returns an object with the menu with strings from the site daysAgo number of days ago
+async function getMenu(page:any):Promise<string> {
     await page.screenshot({path: 'files/screenshot1.png'});
 
     // script containing the menu json
@@ -225,21 +202,20 @@ async function getMenu(daysAgo:number):Promise<string> {
         await (
         await page.$(".panels-collection script")).getProperty('innerHTML') 
         ).jsonValue(); // document.querySelector(".panels-collection script").innerText
-    
+
     // Literally just the substring past Bamco.menu_items to Bamco.cor_icons
     let startDex = script.indexOf("Bamco.menu_items")+"Bamco.menu_items".length+3;
     let endDex = script.indexOf("Bamco.cor_icons")-6;
     return script.substring(startDex,endDex);
 }
-async function writeMeals(daysAgo:number,meals:Food[],chosen:Set<meals>) {
+async function writeDayData(daysAgo:number,dayta:any) {
     let filepath = "files/";
-    let filename = Array.from(chosen).join('-')+"-"+formattedDate(daysAgo)+"_meals";
-    let data = meals;
+    let filename = formattedDate(daysAgo)+"_dayinfo";
     let dir_exists = fs.existsSync(filepath);
     if (!dir_exists) { // If the directory already exists
         await fs.promises.mkdir(filepath,{ recursive: true });
     }
-    fs.writeFile(filepath+filename+".json", JSON.stringify(data), function(err:any, buf:any ) {
+    fs.writeFile(filepath+filename+".json", JSON.stringify(dayta), function(err:any, buf:any ) {
         if(err) {
             console.log("error: ", err);
         } else {
@@ -248,41 +224,62 @@ async function writeMeals(daysAgo:number,meals:Food[],chosen:Set<meals>) {
     });
 }
 // Returns if DB/file storage for having the value
-async function inArchive(daysAgo:number,chosen:Set<meals>):Promise<boolean> {
+async function inDatabase(daysAgo:number):Promise<boolean> {
     let filepath = "files/";
-    let filename = Array.from(chosen).join('-')+"-"+formattedDate(daysAgo)+"_meals";
+    let filename = formattedDate(daysAgo)+"_dayinfo";
     return fs.existsSync(filepath+filename+".json");
 }
 // Only call if the meal is in the archive
-async function readMeal(daysAgo:number,chosen:Set<meals>):Promise<string> {
+async function outDatabase(daysAgo:number):Promise<string> {
     let filepath = "files/";
-    let filename = Array.from(chosen).join('-')+"-"+formattedDate(daysAgo)+"_meals";
+    let filename = formattedDate(daysAgo)+"_dayinfo";
     return await JSON.parse(await fs.promises.readFile(filepath+filename+".json"));
 }
-async function checkMenusAndMeals():Promise<object> {
-    // puppeteering
-    const browser = await puppeteer.launch({headless: "new"});
-    const page = await browser.newPage();
+async function getMenusAndMeals(daysOffset:number):Promise<object> {
     let toRet:any = {};
-    toRet["dayData"] = {};
-    toRet["mealData"] = {};
+    toRet["validMenus"] = {};
+    toRet["validMeals"] = {};
+    toRet["meals"] = {};
+    // toRet["menus"] = {}; //so we don't include in the written json
+    let menus:any = {};
     let meals:string[] = ["breakfast", "lunch", "dinner"];
     // Bon site
-    let days = [0,3,4];
+    let days:number[] = [0,5,6];
     for (let i:number = 0; i <= 2; i++) {
-        let daysAgo:number = days[i];
+         // Added so we get the days relative to the given day; we want multiple days data corresponding to a single day
+         // https://stackoverflow.com/questions/39269701/typescript-trying-the-addition-of-two-variables-but-get-the-concatenation-of-t
+        let daysAgo:number = +days[i] + +daysOffset;
+        // puppeteering
+        const browser = await puppeteer.launch({headless: "new"});
+        const page = await browser.newPage();
         await page.goto(bonSite(daysAgo), { timeout: 30000 } );
         let script = 
             await ( 
             await (
             await page.$(".panels-collection script")).getProperty('innerHTML') 
             ).jsonValue();
-        toRet["dayData"][daysAgo] = !(!(script));
-        if (toRet["dayData"][daysAgo]) {
+        toRet["validMenus"][daysAgo] = !(!(script));
+        if (toRet["validMenus"][daysAgo]) { // valid day/menu
+            toRet["validMeals"][daysAgo] = {};
+            toRet["meals"][daysAgo] = {};
+            menus[daysAgo] = await JSON.parse(await getMenu(page));
             for (let meal = 0; meal <= 2; meal++) {
-                toRet["mealData"][daysAgo][meals[meal]] = !(!(await page.$("#"+meals[meal])));
+                toRet["validMeals"][daysAgo][meals[meal]] = !(!(await page.$("#"+meals[meal]))); // valid meal
+                if (toRet["validMeals"][daysAgo][meals[meal]]) {
+                    console.log("Goethe was smartest, for sure");
+                    toRet["meals"][daysAgo][meals[meal]] = await getMeal(page,meal,menus[daysAgo]); // NEVER FORGET AN AWAIT FML
+                } else {
+                    toRet["meals"][daysAgo][meals[meal]] = {};
+                }
             }
-            return toRet;
+        } else { // invalid day/menu
+            menus[daysAgo] = {};
+            toRet["validMeals"][daysAgo] = {};
+            toRet["meals"][daysAgo] = {};
+            for (let meal = 0; meal <= 2; meal++) { // invalid meals
+                toRet["validMeals"][daysAgo][meals[meal]] = false;
+                toRet["meals"][daysAgo][meals[meal]] = {};
+            }
         }
     }
     return toRet;
@@ -329,112 +326,26 @@ router.get('/scraping_up/', async function(req:any, res:any) {
 // Supporting CORS: https://stackoverflow.com/questions/36840396/fetch-gives-an-empty-response-body
 // https://stackoverflow.com/questions/18498726/how-do-i-get-the-domain-originating-the-request-in-express-js
 // Meal number denotes which specific meal you are retrieving
-router.get('/get_meal/:daysAgo/:mealNumber', async function(req:any, res:any) {
+router.get('/days_and_meals/:daysAgo/', async function(req:any, res:any) {
     let daysAgo:number = req.params.daysAgo;
     if (daysAgo < -1) {
         res.send("Invalid day: "+daysAgo);
         return;
     }
-    // if (!await checkMenu(daysAgo)) {
-    //     res.send("Invalid menu");
-    //     return;
-    // }
-    // if (!await checkMeal(daysAgo,req.params.mealNumber)) {
-    //     res.send("Invalid meal");
-    //     return;
-    // }
-    let mealSet = new Set<meals>();
-    mealSet.add(req.params.mealNumber); // turns it into breakfast, lunch, or dinner
-    if (await inArchive(daysAgo,mealSet)) {
-        res.send(await readMeal(daysAgo,mealSet));
+    if (await inDatabase(daysAgo)) {
+        res.send(await outDatabase(daysAgo));
         return;
     }
-    let menu = await JSON.parse(await getMenu(daysAgo));
-    let toWrite:Food[] = await getMeals(daysAgo,mealSet,menu);
-    await writeMeals(daysAgo,toWrite,mealSet);
+    let toWrite:any = await getMenusAndMeals(daysAgo);
+    await writeDayData(daysAgo,toWrite);
     // Sorta arbitrary but I guess helps keep track of menu for each day
-    fs.writeFile("files/menu.json",JSON.stringify(menu),function(err:any,buf:any) {
-        if(err) {
-            res.send("meal not found, error writing to DB: ", err);
-            return;
-        } else {
-        }
-    });
-    res.send(await readMeal(daysAgo,mealSet));
-});
-// Deprecated
-// router.get('/check_meal/:daysAgo/:mealNumber',async function(req:any,res:any) {
-//     // Check valid day
-//         // If invalid, then return false
-//         // Okay it looks like there are no invalid day urls
-//     let daysAgo:number = req.params.daysAgo;
-//     if (daysAgo < -1) {
-//         res.send("Invalid day: "+daysAgo);
-//         return;
-//     }
-//     let mealSet = new Set<meals>();
-//     mealSet.add(req.params.mealNumber); // turns it into breakfast, lunch, or dinner
-//     // Check valid meal
-//         // If the query selector for the meal things don't work
-//     res.send(await inArchive(daysAgo,mealSet) || await checkMeal(daysAgo,req.params.mealNumber));
-// });
-router.get('/days_and_meals/',async function(req:any,res:any) {
-    // Check valid day
-        // If invalid, then return false
-        // Okay it looks like there are no invalid day urls
-    let daysAgo:number = req.params.daysAgo;
-    if (daysAgo < -1) {
-        res.send("Invalid day: "+daysAgo);
-        return;
-    }
-    // Check valid meal
-        // If the query selector for the meal things don't work
-    res.send(await checkMenusAndMeals());
+    res.send(toWrite);
 });
 // Update
 // Overwrite old_bon_site.html. Only call when sure we can process old_site.html
 router.put('/update_archive/',async function(req:any,res:any) {
     let content = await bonSiteUp(); // gets the banner site html
     fs.writeFile(archivedBonSite,content,function(err:any, buf:any) {
-        if(err) {
-            res.send("error writing: ", err);
-        } else {
-            res.send("success writing");
-        }
-    });
-});
-// Write all meal data from xxxx days ago to tables
-router.put('/load_meals/:daysAgo',async function(req:any,res:any) {
-    let daysAgo:number = req.params.daysAgo;
-    // Valid days ago checking
-    // Get menu object.
-    // Get all foods in an array using the menu object
-        // let foods = await getMeals(daysAgo,menu);
-    // Writing to a sqlserver db
-
-    if (daysAgo < -1) {
-        res.send("Invalid day: "+daysAgo);
-        return;
-    }
-    // if (!(await checkMenu(daysAgo))) {
-    //     res.send("Invalid menu");
-    //     return;
-    // }
-    let menu = await JSON.parse(await getMenu(daysAgo));
-    // let 
-    let mealSet = new Set<meals>();
-    // if (await checkMeal(daysAgo,meals.Breakfast)) {
-    //     mealSet.add(meals.Breakfast);
-    // }
-    // if (await checkMeal(daysAgo,meals.Lunch)) {
-    //     mealSet.add(meals.Lunch);
-    // }
-    // if (await checkMeal(daysAgo,meals.Dinner)) {
-    //     mealSet.add(meals.Dinner);
-    // }
-    let toWrite:Food[] = await getMeals(daysAgo,mealSet,menu);
-    await writeMeals(daysAgo,toWrite,mealSet);
-    fs.writeFile("files/menu.json",JSON.stringify(menu),function(err:any,buf:any) {
         if(err) {
             res.send("error writing: ", err);
         } else {
