@@ -80,6 +80,7 @@ The goal is to follow this advice: https://www.youtube.com/watch?v=LBc8bXoK61Y
   - For better type safety
 - Node.js
  - Puppeteer web scraper familiarity
+   - Web scraping approach is to use data that is easily visible to users, as this is the data that must be of the highest quality/consistency
 5. Testing & Integration
 - Use a folder for it
 - Jest, Mocha, seem good

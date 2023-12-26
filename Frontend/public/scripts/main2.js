@@ -84,7 +84,9 @@ gung.FoodController = class {
     static async makeController() {
         const model = await gung.Model.fetchModel();
         // Invoke the private constructor...
-        return new gung.FoodController(model);
+        let ctrlr = new gung.FoodController(model);
+        model.setController(ctrlr); // To enable two way communication
+        return ctrlr;
     }
     updateView() {
         this.updateBoard();
@@ -210,7 +212,7 @@ gung.FoodController = class {
                 fs.banned = false;
                     const oldBans = document.querySelector("#banned");
                     const item = document.querySelector(`#banned #f${fs.food["id"]}`);
-                    oldBans.removeChild(item);                
+                    oldBans.removeChild(item);
                 this.updateView();
             };
         } else if (fs.required) {
@@ -290,6 +292,7 @@ gung.FoodController = class {
     // Talks to the backend to save/load data
 gung.Model = class {
     constructor(foodo,dias,milos) {
+        this.loading = false;
 		// TODO: Make instance variables
         this.curDay = 0; // Defeault: today. It's fine with invalid values, just displays text indicating as such TODO REVERT TO 0
         this.curMeal = 0;
@@ -387,7 +390,7 @@ gung.Model = class {
             return new gung.Model(await meal.json(),days,meals);
         } else {
             alert("There is no breakfast today");
-            return new gung.Model(false,days,meals);
+            return new gung.Model({},days,meals);
         }
     }
     getBoard() {
@@ -450,7 +453,12 @@ gung.Model = class {
             let mealstrs = ["breakfast", "lunch", "dinner"];
             alert(`There is no ${mealstrs[this.curMeal]} today`);
         }
-        this.foods = await meal.json();
+        console.log("MILO: "+meal);
+        if (meal) {
+            this.foods = await meal.json();
+        } else {
+            this.foods = {};
+        }
         this.board = {};
 		for (const property in this.foods) {
 			this.board[this.foods[property]["label"]] = new gung.FoodSquare(this.foods[property]);
