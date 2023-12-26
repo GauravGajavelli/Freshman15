@@ -163,7 +163,7 @@ gung.FoodController = class {
     _createSquare(fs) {
         if (fs.banned) {
             return gung.htmlToElement(`
-            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}"><h1>${fs.food["label"]}</h1>
+            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}" id="f${fs.food["id"]}"><h1>${fs.food["label"]}</h1>
             <button>
               Add Back
             </button>
@@ -171,10 +171,10 @@ gung.FoodController = class {
             `);
         } else if (fs.required) {
             return gung.htmlToElement(`
-            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}"><h1>${fs.food["label"]}</h1>
+            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}" id="f${fs.food["id"]}"><h1>${fs.food["label"]}</h1>
             <span>
               <span>
-                <input type="number" id="quantity" min="1" value="1"/>
+                <input type="number" id="quantity" min="1" max="10" value="1"/>
               </span>
               <button>
                 Remove
@@ -184,7 +184,7 @@ gung.FoodController = class {
             `);
         } else {
             return gung.htmlToElement(`
-            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}"><h1>${fs.food["label"]}</h1>
+            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}" id="f${fs.food["id"]}"><h1>${fs.food["label"]}</h1>
             <button>
               Add
             </button>
@@ -259,6 +259,19 @@ gung.FoodController = class {
                     oldReqs.removeChild(item);
                 this.updateView();
             };
+            square.children[1].children[0].children[0].onchange = (event) => {
+                let val = square.children[1].children[0].children[0].value;
+                let newVal = val;
+                if (val < 1) {
+                    newVal = 1;
+                } else if (val > 10) {
+                    newVal = 10;
+                }
+                // Change to id later
+                let foodID = square.id;
+                this.model.setFoodFreq(foodID,newVal);
+                square.children[1].children[0].children[0].value = newVal;
+            }
             // TODO Set up click stuff
         } else { // neither banned nor required
             // return gung.htmlToElement(`
@@ -323,7 +336,7 @@ gung.Model = class {
         this.meals = ["breakfast", "lunch", "dinner"];
         let foods = this.data.meals[this.curDay.toString()][this.meals[this.curMeal]];
 		for (const property in foods) {
-			this.board[foods[property]["label"]] = new gung.FoodSquare(foods[property]);
+			this.board["f"+foods[property]["id"]] = new gung.FoodSquare(foods[property]);
 		}
 
         // Dietary preference
@@ -359,17 +372,21 @@ gung.Model = class {
     setController(ctrlr) {
         this.controller = ctrlr;
     }
+    setFoodFreq(id,freq) {
+        this.board[id].quantity = freq;
+        // console.log("There are now "+freq+" "+this.board[id].food["label"]);
+    }
     toggleVegetarian(){
         this.vegetarian = !this.vegetarian;
-        console.log("vegetarian: "+this.vegetarian);
+        // console.log("vegetarian: "+this.vegetarian);
     }
     toggleVegan(){
         this.vegan = !this.vegan;
-        console.log("vegan: "+this.vegan);
+        // console.log("vegan: "+this.vegan);
     }
     toggleGlutenFree(){
         this.glutenfree = !this.glutenfree;
-        console.log("glutenfree: "+this.glutenfree);
+        // console.log("glutenfree: "+this.glutenfree);
     }
     getBoard() {
         return this.board;
@@ -392,17 +409,10 @@ gung.Model = class {
         let foods = this.data.meals[this.curDay.toString()][this.meals[this.curMeal]];
         this.board = {};
 		for (const property in foods) {
-			this.board[foods[property]["label"]] = new gung.FoodSquare(foods[property]);
+			this.board["f"+foods[property]["id"]] = new gung.FoodSquare(foods[property]);
 		}
     }
     async generateMeal() {
-        console.log("Generating with: ");
-        for (const property in this.board) {
-            const fS = this.board[property]; // foodSquare
-            if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
-                console.log(fS.food["label"]);
-            }
-        }
         const resp = await fetch("http://"+gung.apiUrl+"/"+gung.generateMeal+"/"+this.vegetarian+"/"+this.vegan+"/"+this.glutenfree, {
             method: 'POST',
             headers: {
