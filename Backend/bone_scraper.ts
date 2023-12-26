@@ -312,7 +312,39 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
 // ISSUES: 
     // Error: Requesting main frame too early!
         // Seems to happen arbitrarily, just rerun
+    // Everything is extremely slow and prone to errors as a result
+        // Minimize repeated work (particularly at the bottleneck of scraping) and cache results to load more quickly
+    // Nothing showing up in json
+        // Make sure to await any promises
+    // Addition of numbers causes string concatenation
+        // +a + +b
+        // dumb, ik
+    // Not able to puppeteer
+        // You need to make a new browser and/or page instance between page.goto uses
+    // JS sets and maps are jank
+        // Don't use them, and always make sure to use strict equality
+    // Not able to send a body to the backend
+        // You can't do this with get or head requests
+// Middleware
 
+// For parsing application/json
+router.use(express.json());
+ 
+// For parsing application/x-www-form-urlencoded
+router.use(express.urlencoded({ extended: true }));
+
+// Create
+router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/', async function(req:any, res:any) {
+    let board = req.body;
+    console.log("Cucamunga: "+board);
+    for (const property in board) {
+        const fS = board[property]; // foodSquare
+        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+            console.log(fS.food["label"]);
+        }
+    }
+    res.send({h:"loud and clear"});
+});
 // Read
 router.get('/test/', async function(req:any, res:any) {
     res.send("Backend is up");

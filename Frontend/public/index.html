@@ -26,16 +26,16 @@
             <select id="date-select">
               <!-- NOTE: HAD NAME IN ADDITION TO VALUE -->
               <option value="0">Today</option>
-              <option value="3">Tomorrow</option>
-              <option value="4">Yesterday</option>
+              <option value="5">Tomorrow</option>
+              <option value="6">Yesterday</option>
             </select>
           </div>
           <div class = "flex-container3 flex-item2" id="meal">
             <h3>Meal</h3>
             <select id="meal-select">
-              <option value="0">Breakfast</option>
+              <!-- <option value="0">Breakfast</option>
               <option value="1">Lunch</option>
-              <option value="2">Dinner</option>
+              <option value="2">Dinner</option> -->
             </select>
           </div>
           <div class="flex-container7" id="search">
@@ -46,7 +46,7 @@
             </div>
           </div>
           <div class = "flex-container3 flex-item2" id="diets">
-            <h3>Dietary restrictions</h3>
+            <h3>Dietary Restrictions</h3>
             <div class="flex-container9">
               <div class = flex-container2>
                 <span>Vegetarian</span>
@@ -54,9 +54,9 @@
                 <span>Gluten-Free</span>
               </div>
               <div class = flex-container2>
-                <input type="checkbox">
-                <input type="checkbox">
-                <input type="checkbox">
+                <input type="checkbox" id="vegetarian">
+                <input type="checkbox" id="vegan">
+                <input type="checkbox" id="glutenfree">
               </div>
             </div>
           </div>
@@ -77,7 +77,7 @@
               </div>
             </div>
           </div>
-          <button>
+          <button id="generate">
             <h1>Generate Meal</h1>
           </button>
         </div>

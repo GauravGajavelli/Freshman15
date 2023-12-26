@@ -16,9 +16,8 @@ var gung = gung || {};
 /** globals */
 gung.variableName = "";
 gung.apiUrl = "localhost:3000";
-gung.mealPath = "get_meal";
-gung.dayCheck = "check_day";
-gung.mealCheck = "check_meal";
+gung.daysAndMeals = "days_and_meals";
+gung.generateMeal = "generate_meal";
 
 /** function and class syntax examples */
 gung.functionName = function () {
@@ -63,21 +62,36 @@ gung.FoodController = class {
             // THE ASYNC ARROW FUNCTION IS VERY IMPORTANT; 
             let yourSelect = document.querySelector("#date-select");
             let newDay = yourSelect.options[ yourSelect.selectedIndex ].value; // -1,0,1
-            console.log("Nude, ay: "+newDay);
             await this.model.setDay(newDay); // get new board
             this.updateList();
             this.updateView();
+            this.clearItems();
         };
 
         document.querySelector("#meal-select").onchange = async (event) => {
             // THE ASYNC ARROW FUNCTION IS VERY IMPORTANT; 
             let yourSelect = document.querySelector("#meal-select");
-            let newMeal = yourSelect.options[ yourSelect.selectedIndex ].value; // -1,0,1
-            console.log("Nume, eel: "+newMeal);
+            let newMeal = yourSelect.options[ yourSelect.selectedIndex ].value; // 0,1,2
             await this.model.setMeal(newMeal); // get new board
-            this.updateList();
+            // this.updateList(); No need to update list and reset to breakfast with every meal select
             this.updateView();
+            this.clearItems();
         };
+
+        document.querySelector("#generate").onclick = async (event) => {
+            await this.model.generateMeal();
+        }
+
+        document.querySelector("#vegetarian").onchange = async (event) => {
+            this.model.toggleVegetarian();
+        }
+        document.querySelector("#vegan").onchange = async (event) => {
+            this.model.toggleVegan();
+        }
+        document.querySelector("#glutenfree").onchange = async (event) => {
+            this.model.toggleGlutenFree();
+        }
+
         this.updateList();
         this.updateView();
 	}
@@ -91,22 +105,30 @@ gung.FoodController = class {
     updateView() {
         this.updateBoard();
     }
+    clearItems() {
+        const oldBans = document.querySelector(`#banned`);
+        const oldReqs = document.querySelector(`#required`);
+        oldBans.innerHTML='';
+        oldReqs.innerHTML='';
+        const reqHeader = gung.htmlToElement(`<h3>Required Foods</h3>`);
+        const banHeader = gung.htmlToElement(`<h3>Banned Foods</h3>`);
+		oldReqs.append(reqHeader);
+        oldBans.append(banHeader);
+    }
     updateList() {
-        console.log("Updating list");
             const bOption = gung.htmlToElement(`<option value="0">Breakfast</option>`);
             const lOption = gung.htmlToElement(`<option value="1">Lunch</option>`);
             const dOption = gung.htmlToElement(`<option value="2">Dinner</option>`);
         let options = [bOption,lOption,dOption];
         let mealSelect = document.querySelector(`#meal-select`);
-        let meals = this.model.getCurrentMeals();
-        console.log("Sheck it out, meals: "+meals);
+        let meals = this.model.getValidMeals();
+        let mealnames = this.model.getMealNames();
         for (let i = 0; i <= 2; i++) {
             let curOption = document.querySelector(`#meal-select option[value='${i}']`);
             if (curOption) { // if it is had
                 curOption.parentElement.removeChild(curOption);
             }
-            if (meals.has(i)) { // if it should be had
-                console.log("Made visible: "+i);
+            if (meals[mealnames[i]]) { // if it should be had
                 mealSelect.append(options[i]);
             }
         }
@@ -273,7 +295,6 @@ gung.FoodController = class {
     }
     _setUpDelete(item,fs) { // adds a delete click listener for a list item
         item.children[1].onclick = (event) => {
-            console.log("tried to delete");
             // Prolly need to do some model stuff
             // this.game.pressedButtonAtIndex(buttonIndex);
             const oldList = document.querySelector(`#${fs.banned?"banned":"required"}`); // Assumes banned if not required because in list
@@ -291,51 +312,24 @@ gung.FoodController = class {
 // Model
     // Talks to the backend to save/load data
 gung.Model = class {
-    constructor(foodo,dias,milos) {
+    constructor(dayta) {
         this.loading = false;
 		// TODO: Make instance variables
-        this.curDay = 0; // Defeault: today. It's fine with invalid values, just displays text indicating as such TODO REVERT TO 0
+        this.curDay = 0; // Default: today. It's fine with invalid values, just displays text indicating as such TODO REVERT TO 0
         this.curMeal = 0;
-        this.validDays = dias;
-        this.validMeals = milos; // It's not fine with invalid values, since the meals may not actually exist, unlike days
 
-        this.foods = foodo; // gets the object
+        this.data = dayta; // gets the object
         this.board = {};
-		for (const property in this.foods) {
-			this.board[this.foods[property]["label"]] = new gung.FoodSquare(this.foods[property]);
-            // console.log("Own kung: "+this.foods[property]);
-            // console.log(new gung.FoodSquare());
+        this.meals = ["breakfast", "lunch", "dinner"];
+        let foods = this.data.meals[this.curDay.toString()][this.meals[this.curMeal]];
+		for (const property in foods) {
+			this.board[foods[property]["label"]] = new gung.FoodSquare(foods[property]);
 		}
-		// console.log('this.board = ', this.board);
-		// console.log('this.state :>> ', this.state);
-    }
 
-    static async booleanVal(response) {
-        return (JSON.stringify(await response.json())) === 'true';
-    }
-
-    static async mealsForDay(day) {
-        let meals = new Set();
-        for (let m = 0; m <= 2; m++) { // meals
-            let validMeal = false;
-            try {
-                validMeal = await fetch(`http://${gung.apiUrl}/${gung.mealCheck}/${day}/${m}`, {
-                    // mode: 'no-cors',
-                    method: 'GET',
-                    headers: {
-                            "Content-Type": "application/json"
-                    }
-                });
-            } catch(err) {
-                alert(err); // Failed to fetch
-            }
-            let valMel = (await gung.Model.booleanVal(validMeal));
-            console.log("Valid meal?: "+valMel);
-            if (valMel) {
-                meals.add(m);
-            }
-        }
-        return meals;
+        // Dietary preference
+        this.vegetarian = false;
+        this.vegan = false;
+        this.glutenfree = false;
     }
 
     /**
@@ -348,69 +342,46 @@ gung.Model = class {
      */
     // https://dev.to/somedood/the-proper-way-to-write-async-constructors-in-javascript-1o8c
     static async fetchModel() {
-        // Perform `async` stuff here...
-        let days = new Set(); // set of the available days
-        let meals = new Map(); // maps days to what meals are available, for when they get future options
-        for (let i = 0; i <= 2; i++) { // days
-            let ds = [0,3,4];
-            let d = ds[i];
-            let validDay = false;
-            try {
-                validDay = await fetch(`http://${gung.apiUrl}/${gung.dayCheck}/${d}`, {
-                    // mode: 'no-cors',
-                    method: 'GET',
-                    headers: {
-                            "Content-Type": "application/json"
-                    }
-                });
-            } catch(err) {
-                alert(err); // Failed to fetch
-            }
-            meals.set(d,new Set());
-            let valdy = (await gung.Model.booleanVal(validDay));
-            console.log("Valid day?: "+valdy);
-            if (valdy) {
-                days.add(d);
-                meals.set(d, await gung.Model.mealsForDay(d));
-            }
+        let data = {};
+        try {
+            data = await fetch("http://"+gung.apiUrl+"/"+gung.daysAndMeals+"/0", { // Always /0, to get days surrounding
+                // mode: 'no-cors',
+                method: 'GET',
+                headers: {
+                        "Content-Type": "application/json"
+                }
+            });
+        } catch(err) {
+            alert(err); // Failed to fetch
         }
-        let meal = {};
-        if (meals.get(0).has(0)) { // breakfast was a valid meal
-            try {
-                meal = await fetch("http://"+gung.apiUrl+"/"+gung.mealPath+"/0/0", {
-                    // mode: 'no-cors',
-                    method: 'GET',
-                    headers: {
-                            "Content-Type": "application/json"
-                    }
-                });
-            } catch(err) {
-                alert(err); // Failed to fetch
-            }
-            return new gung.Model(await meal.json(),days,meals);
-        } else {
-            alert("There is no breakfast today");
-            return new gung.Model({},days,meals);
-        }
+        return new gung.Model(await data.json());
+    }
+    setController(ctrlr) {
+        this.controller = ctrlr;
+    }
+    toggleVegetarian(){
+        this.vegetarian = !this.vegetarian;
+        console.log("vegetarian: "+this.vegetarian);
+    }
+    toggleVegan(){
+        this.vegan = !this.vegan;
+        console.log("vegan: "+this.vegan);
+    }
+    toggleGlutenFree(){
+        this.glutenfree = !this.glutenfree;
+        console.log("glutenfree: "+this.glutenfree);
     }
     getBoard() {
         return this.board;
     }
-    getCurrentMeals() {
-        let arr = Array.from( this.validMeals.keys() );
-        let gurget = new Set();
-        for (let i = 0; i < arr.length; i++) {
-            if (arr[i] == this.curDay) {
-                console.log("glottal match, but real match: "+(arr[i] === this.curDay));
-                gurget = this.validMeals.get(arr[i]);
-            }else{
-                console.log("glottal not match, but real match: "+(arr[i] === this.curDay));
-            }
-        }
-        return gurget;
+    getMealNames() {
+        return this.meals;
+    }
+    getValidMeals() {
+        return this.data.validMeals[this.curDay.toString()];
     }
     getValidDays() {
-        return this.validDays;
+        return this.data.validMenus;
     }
     async setDay(day) {
         this.curDay = day;
@@ -418,53 +389,31 @@ gung.Model = class {
     }
     async setMeal(meal) {
         this.curMeal = meal;
-        console.log("cur day: "+this.curDay+", cur meal: "+this.curMeal);
-        console.log("curray: "+this.validMeals.get(this.curDay));
-        let arr = Array.from( this.validMeals.keys() );
-        let gurget = new Set();
-        for (let i = 0; i < arr.length; i++) {
-            console.log("# 2 Key val: "+arr[i]);
-            console.log("# 2 Key val val: "+this.validMeals.get(arr[i]));
-            let arr2 = Array.from(this.validMeals.get(arr[i]));
-            for (let j = 0; j < arr2.length; j++) {
-                console.log("# 2 curray val: "+arr2[j]);
-            }
-            if (arr[i] == this.curDay) {
-                console.log("match");
-                gurget = this.validMeals.get(arr[i]);
-            }else{
-                console.log("not match");
-            }
-        }
-        console.log("new gurget curray?: "+gurget);
-        if (gurget.has(this.curMeal)) { // breakfast was a valid meal
-            try {
-                meal = await fetch(`http://${gung.apiUrl}/${gung.mealPath}/${this.curDay}/${this.curMeal}`, {
-                    // mode: 'no-cors',
-                    method: 'GET',
-                    headers: {
-                            "Content-Type": "application/json"
-                    }
-                });
-            } catch(err) {
-                alert(err); // Failed to fetch
-            }
-        } else {
-            let mealstrs = ["breakfast", "lunch", "dinner"];
-            alert(`There is no ${mealstrs[this.curMeal]} today`);
-        }
-        console.log("MILO: "+meal);
-        if (meal) {
-            this.foods = await meal.json();
-        } else {
-            this.foods = {};
-        }
+        let foods = this.data.meals[this.curDay.toString()][this.meals[this.curMeal]];
         this.board = {};
-		for (const property in this.foods) {
-			this.board[this.foods[property]["label"]] = new gung.FoodSquare(this.foods[property]);
-            // console.log("Own kung: "+this.foods[property]);
-            // console.log(new gung.FoodSquare());
+		for (const property in foods) {
+			this.board[foods[property]["label"]] = new gung.FoodSquare(foods[property]);
 		}
+    }
+    async generateMeal() {
+        console.log("Generating with: ");
+        for (const property in this.board) {
+            const fS = this.board[property]; // foodSquare
+            if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+                console.log(fS.food["label"]);
+            }
+        }
+        const resp = await fetch("http://"+gung.apiUrl+"/"+gung.generateMeal+"/"+this.vegetarian+"/"+this.vegan+"/"+this.glutenfree, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(this.board)
+        });
+        const content = await resp.json();
+
+        console.log(content);
     }
 }
 
