@@ -4,6 +4,8 @@ var express = require('express');
 var router = express.Router();
 const fs = require("fs");
 const { DateTime } = require("luxon");
+const GLPK = require('glpk.js');
+const glpk = GLPK();
 
 var puppeteer = require('puppeteer');
 
@@ -124,6 +126,16 @@ function bonSite(daysAgo:number):string {
 function formattedDate (daysAgo:number):string {
     let val = DateTime.now().minus({ days: daysAgo });
     return val.year+"-"+val.month.toString().padStart(2,'0')+"-"+val.day.toString().padStart(2,'0');
+}
+function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean):Food[] {
+    for (const property in board) {
+        // console.log("A Priori: "+(typeof board[property].required));
+        if (board[property].required) {
+            console.log(board[property].food["label"]);
+        }
+    }
+
+    return [];
 }
 async function bonSiteUp():Promise<string> {
     // puppeteering
@@ -325,6 +337,8 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
         // Don't use them, and always make sure to use strict equality
     // Not able to send a body to the backend
         // You can't do this with get or head requests
+    // Everything is broken upon refactor and takes forever to fix
+        // Test functionality incrementally (akin to test-driven development), and 
 
 // Create
 router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/', async function(req:any, res:any) {
@@ -336,15 +350,52 @@ router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/', async function(req
     //         this.quantity = 0;
     //     }
     // }
-    let board = req.body;
-    console.log("Cucamunga: "+board);
-    for (const property in board) {
-        const fS = board[property]; // foodSquare
-        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
-            console.log(fS.food["label"]+": "+fS.quantity);
-        }
-    }
-    res.send({h:"loud and clear"});
+    let board:any = req.body;
+    let vegetarian:string = req.params.vegetarian;
+    let vegan:string = req.params.vegan;
+    let glutenfree:string = req.params.glutenfree;
+    let meal:Food[] = generateMeal(board,vegetarian==="true",vegan==="true",glutenfree==="true"); // returns an array of the foods
+
+    const lp = {
+        name: 'LP',
+        objective: {
+            direction: glpk.GLP_MAX,
+            name: 'obj',
+            vars: [
+                { name: 'x1', coef: 0.6 },
+                { name: 'x2', coef: 0.5 }
+            ]
+        },
+        subjectTo: [
+            {
+            name: 'cons1',
+                vars: [
+                    { name: 'x1', coef: 1.0 },
+                    { name: 'x2', coef: 2.0 }
+                ],
+                bnds: { type: glpk.GLP_UP, ub: 1.0, lb: 0.0 }
+            },
+            {
+                name: 'cons2',
+                vars: [
+                    { name: 'x1', coef: 3.0 },
+                    { name: 'x2', coef: 1.0 }
+                ],
+                bnds: { type: glpk.GLP_UP, ub: 2.0, lb: 0.0 }
+            }
+        ]
+    };
+
+    const opt = {
+        msglev: glpk.GLP_MSG_OFF
+    };
+
+    // glpk.solve(lp, opt)
+    //     .then(res => print(res))
+    //     .catch(err => console.log(err));
+
+    console.log(await glpk.solve(lp, glpk.GLP_MSG_DBG));
+    res.send(meal);
 });
 // Read
 router.get('/test/', async function(req:any, res:any) {
