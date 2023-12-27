@@ -92,6 +92,65 @@ gung.FoodController = class {
             this.model.toggleGlutenFree();
         }
 
+        document.querySelector("#calories").onchange = (event) => {
+            let val = document.querySelector("#calories");
+            let newVal = val;
+            if (val < 0) {
+                newVal = 0;
+            } else if (val > 10000) {
+                newVal = 10000;
+            }
+            this.model.setCalories(newVal);
+            val.value = newVal;
+        }
+        document.querySelector("#fat").onchange = (event) => {
+            let f = document.querySelector("#fat");
+            let c = document.querySelector("#carbohydrate");
+            let p = document.querySelector("#protein");
+            let newVal = f.value;
+            if (f.value < 0) {
+                newVal = 0;
+            } else if ((f.value+c.value+p.value) <= 100) { // It'll complete the %
+                newVal = 100-c.value-p.value;
+            } else if ((f.value+c.value+p.value) > 100) { // It'll destroy the others lel
+                p.value = 0;
+                c.value = 0;
+            }
+            this.model.setFat(newVal);
+            val.value = newVal;
+        }
+        document.querySelector("#carbohydrate").onchange = (event) => {
+            let f = document.querySelector("#fat");
+            let c = document.querySelector("#carbohydrate");
+            let p = document.querySelector("#protein");
+            let newVal = c.value;
+            if (c.value < 0) {
+                newVal = 0;
+            } else if ((f.value+c.value+p.value) <= 100) { // It'll complete the %
+                newVal = 100-f.value-p.value;
+            } else if ((f.value+c.value+p.value) > 100) { // It'll destroy the others lel
+                f.value = 0;
+                p.value = 0;
+            }
+            this.model.setCarbohydrate(newVal);
+            val.value = newVal;
+        }
+        document.querySelector("#protein").onchange = (event) => {
+            let f = document.querySelector("#fat");
+            let c = document.querySelector("#carbohydrate");
+            let p = document.querySelector("#protein");
+            let newVal = p.value;
+            if (c.value < 0) {
+                newVal = 0;
+            } else if ((f.value+c.value+p.value) <= 100) { // It'll complete the %
+                newVal = 100-f.value-c.value;
+            } else if ((f.value+c.value+p.value) > 100) { // It'll destroy the others lel
+                f.value = 0;
+                c.value = 0;
+            }
+            this.model.setProtein(newVal);
+            val.value = newVal;
+        }
         this.updateList();
         this.updateView();
 	}
@@ -174,7 +233,7 @@ gung.FoodController = class {
             <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}" id="f${fs.food["id"]}"><h1>${fs.food["label"]}</h1>
             <span>
               <span>
-                <input type="number" id="quantity" min="1" max="10" value="1"/>
+                <input type="number" id="quantity" min="1" max="10" value="${fs.quantity == 0?1:fs.quantity}"/>
               </span>
               <button>
                 Remove
@@ -343,6 +402,12 @@ gung.Model = class {
         this.vegetarian = false;
         this.vegan = false;
         this.glutenfree = false;
+
+        // Parameters
+        this.calories = 750;
+        this.fat = 25;
+        this.carb = 55;
+        this.protein = 20;
     }
 
     /**
@@ -374,7 +439,19 @@ gung.Model = class {
     }
     setFoodFreq(id,freq) {
         this.board[id].quantity = freq;
-        // console.log("There are now "+freq+" "+this.board[id].food["label"]);
+        console.log("There are now "+freq+" "+this.board[id].food["label"]);
+    }
+    setCalories(cals) {
+        this.calories = cals;
+    }
+    setFat(f) {
+        this.fat = f;
+    }
+    setCarbohydrate(c) {
+        this.carb = c;
+    }
+    setProtein(p) {
+        this.protein = p;
     }
     toggleVegetarian(){
         this.vegetarian = !this.vegetarian;
@@ -413,7 +490,7 @@ gung.Model = class {
 		}
     }
     async generateMeal() {
-        const resp = await fetch("http://"+gung.apiUrl+"/"+gung.generateMeal+"/"+this.vegetarian+"/"+this.vegan+"/"+this.glutenfree, {
+        const resp = await fetch(`http://${gung.apiUrl}/${gung.generateMeal}/${this.vegetarian}/${this.vegan}/${this.glutenfree}/${this.calories}/${this.fat}/${this.carb}/${this.protein}`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',

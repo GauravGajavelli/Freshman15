@@ -127,14 +127,70 @@ function formattedDate (daysAgo:number):string {
     let val = DateTime.now().minus({ days: daysAgo });
     return val.year+"-"+val.month.toString().padStart(2,'0')+"-"+val.day.toString().padStart(2,'0');
 }
-function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean):Food[] {
+// k is kilocals
+async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):Promise<Food[]> {
     for (const property in board) {
         // console.log("A Priori: "+(typeof board[property].required));
         if (board[property].required) {
             console.log(board[property].food["label"]);
         }
     }
+    // Pretty basic
+        // Overall plan: 
+            // Some way to avoid stigler issues, don't want sucky meals
+        // Objective (could be any of the following)
+            // Simple
+                // Stigler diet: buffet case (same as stigler, but everything costs zero)
+                // Maximize the variety of the foods; potentially represented by a metric summing the residuals from the mean for each macronutrient in their ratio
+                    // A chat driven version of this for crunch might work out
+            // Heuristic/Chat Driven
+                // Stigler diet: small plates case (same as stigler, but we use some approximate metric of number of plates or plate size to minimize by)
+                // How about just minimizing the number of different foods appearing, in order to make it easy to gather them
+                    // Like with boolean variables
+                // I could try optimizing by having the foods chosen be from the fewest number of stations possible
+                    // Objective could be then minimizing the sets of boolean variables representing different stations
+                // Chat-GPT generated parameters for every food, eg crunchiness or sweet/salt to make it more palatable than the apparently ridiculed stigler diet
+        // Constraints
+            // All foods must add up to macronutrients ratios and calorie limit
+    const lp = {
+        name: 'LP',
+        objective: {
+            direction: glpk.GLP_MAX,
+            name: 'obj',
+            vars: [
+                { name: 'x1', coef: 0.6 },
+                { name: 'x2', coef: 0.5 }
+            ]
+        },
+        subjectTo: [
+            {
+            name: 'cons1',
+                vars: [
+                    { name: 'x1', coef: 1.0 },
+                    { name: 'x2', coef: 2.0 }
+                ],
+                bnds: { type: glpk.GLP_UP, ub: 1.0, lb: 0.0 }
+            },
+            {
+                name: 'cons2',
+                vars: [
+                    { name: 'x1', coef: 3.0 },
+                    { name: 'x2', coef: 1.0 }
+                ],
+                bnds: { type: glpk.GLP_UP, ub: 2.0, lb: 0.0 }
+            }
+        ]
+    };
 
+    const opt = {
+        msglev: glpk.GLP_MSG_OFF
+    };
+
+    // glpk.solve(lp, opt)
+    //     .then(res => print(res))
+    //     .catch(err => console.log(err));
+
+    console.log(await glpk.solve(lp, glpk.GLP_MSG_DBG));
     return [];
 }
 async function bonSiteUp():Promise<string> {
@@ -339,9 +395,11 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
         // You can't do this with get or head requests
     // Everything is broken upon refactor and takes forever to fix
         // Test functionality incrementally (akin to test-driven development), and 
+    // Bunch of %20s in api call
+        // Don't put newlines, even if it looks better, the url string
 
 // Create
-router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/', async function(req:any, res:any) {
+router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cratio/:pratio/', async function(req:any, res:any) {
     // gung.FoodSquare = class {
     //     constructor(foodo) {
     //         this.food = foodo;
@@ -354,47 +412,22 @@ router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/', async function(req
     let vegetarian:string = req.params.vegetarian;
     let vegan:string = req.params.vegan;
     let glutenfree:string = req.params.glutenfree;
-    let meal:Food[] = generateMeal(board,vegetarian==="true",vegan==="true",glutenfree==="true"); // returns an array of the foods
 
-    const lp = {
-        name: 'LP',
-        objective: {
-            direction: glpk.GLP_MAX,
-            name: 'obj',
-            vars: [
-                { name: 'x1', coef: 0.6 },
-                { name: 'x2', coef: 0.5 }
-            ]
-        },
-        subjectTo: [
-            {
-            name: 'cons1',
-                vars: [
-                    { name: 'x1', coef: 1.0 },
-                    { name: 'x2', coef: 2.0 }
-                ],
-                bnds: { type: glpk.GLP_UP, ub: 1.0, lb: 0.0 }
-            },
-            {
-                name: 'cons2',
-                vars: [
-                    { name: 'x1', coef: 3.0 },
-                    { name: 'x2', coef: 1.0 }
-                ],
-                bnds: { type: glpk.GLP_UP, ub: 2.0, lb: 0.0 }
-            }
-        ]
-    };
+    let calories:number = parseInt(req.params.calories);
+    let fratio:number = parseInt(req.params.fratio);
+    let cratio:number = parseInt(req.params.cratio);
+    let pratio:number = parseInt(req.params.pratio);
 
-    const opt = {
-        msglev: glpk.GLP_MSG_OFF
-    };
+    console.log(`f: ${typeof fratio}`);
+    let meal:Food[] = await generateMeal(board,
+        vegetarian==="true",
+        vegan==="true",
+        glutenfree==="true",
+        calories,
+        fratio,
+        cratio,
+        pratio); // returns an array of the foods
 
-    // glpk.solve(lp, opt)
-    //     .then(res => print(res))
-    //     .catch(err => console.log(err));
-
-    console.log(await glpk.solve(lp, glpk.GLP_MSG_DBG));
     res.send(meal);
 });
 // Read
