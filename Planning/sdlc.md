@@ -66,6 +66,7 @@ The goal is to follow this advice: https://www.youtube.com/watch?v=LBc8bXoK61Y
       - You can also enterred preferred department (yours or not), (only ungreys once the webscraping api request is completed)
         - Like if the profile is not null
       - Performance constraints: 
+        - Well, there was that thing in the spotify documentary about how 0.02 seconds is the limit of human perception at or less than a piece of software is perceived as instantaneous
     - You can also see the schedules of people you are eating
     - Can uncheck stuff like outlook (layers include bon, chaunceys opening, as well as friend schedules)
     - You can check who you want to eat with in one mode, but you can click to another tab and this will generate a random next meal and show you their name (whole ui is just NEXT MEAL: LUNCH And then, RANDOM LUNCH BUDDY: JUANITA)

@@ -477,11 +477,11 @@ gung.Model = class {
     getValidDays() {
         return this.data.validMenus;
     }
-    async setDay(day) {
+    setDay(day) {
         this.curDay = day;
-        await(this.setMeal(0));
+        this.setMeal(0);
     }
-    async setMeal(meal) {
+    setMeal(meal) {
         this.curMeal = meal;
         let foods = this.data.meals[this.curDay.toString()][this.meals[this.curMeal]];
         this.board = {};

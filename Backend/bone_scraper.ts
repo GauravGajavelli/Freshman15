@@ -127,71 +127,249 @@ function formattedDate (daysAgo:number):string {
     let val = DateTime.now().minus({ days: daysAgo });
     return val.year+"-"+val.month.toString().padStart(2,'0')+"-"+val.day.toString().padStart(2,'0');
 }
-// k is kilocals
-async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):Promise<Food[]> {
-    for (const property in board) {
-        // console.log("A Priori: "+(typeof board[property].required));
-        if (board[property].required) {
-            console.log(board[property].food["label"]);
+// For future refactor: Will need to know all of the variable names
+function createObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
+    // Objective (could be any of the following)
+        // Simple
+            // Stigler diet: buffet case (same as stigler, but everything costs zero)
+            // Maximize the variety of the foods; potentially represented by a metric summing the residuals from the mean for each macronutrient in their ratio
+                // A chat driven version of this for crunch might work out
+        // Heuristic/Chat Driven
+            // Stigler diet: small plates case (same as stigler, but we use some approximate metric of number of plates or plate size to minimize by)
+            // How about just minimizing the number of different foods appearing, in order to make it easy to gather them
+                // Like with boolean variables
+            // I could try optimizing by having the foods chosen be from the fewest number of stations possible
+                // Objective could be then minimizing the sets of boolean variables representing different stations
+            // Chat-GPT generated parameters for every food, eg crunchiness or sweet/salt to make it more palatable than the apparently ridiculed stigler diet
+    // Going with the simplest objective: 
+        // Well the cost of all of the items would've been their frequencies added up since they were all normalized to quantities that had the same price
+        // Since our normalized price is free, I'd say our objective would simply be to maximize z = 0*f1+0*f2+0*f3+... = 0
+            // f1, f2, ... denote the food names, but I'll just use food ids or names to keep it simpler
+
+        return {
+        direction: glpk.GLP_MIN,
+        name: 'Stigler Diet: Buffet Case',
+        vars: [
+            { name: 'actuallyzero', coef: 0 }
+        ]
+    };
+}
+// Returns array of foods with corresponding calories
+function getCalVars(board:any):any {
+    // vars: [
+    //     { name: 'x1', coef: 0.6 },
+    //     { name: 'x2', coef: 0.5 }
+    // ]
+    let toRet:any = [];
+    for (const id in board) {
+        const fS = board[id]; // foodSquare
+        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+            toRet.push({ name: id, coef: parseInt(fS.food["nutrition_details"]["calories"]["value"]) });
         }
     }
+    return toRet;
+}
+// Returns array of foods with corresponding fat
+function getFatVars(board:any):any { // assumes all values in foods are in grams
+    // vars: [
+    //     { name: 'x1', coef: 0.6 },
+    //     { name: 'x2', coef: 0.5 }
+    // ]
+    let toRet:any = [];
+    for (const id in board) {
+        const fS = board[id]; // foodSquare
+        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+            toRet.push({ name: id, coef: parseInt(fS.food["nutrition_details"]["fatContent"]["value"]) });
+        }
+    }
+    return toRet;
+}
+// Returns array of foods with corresponding carbohydrates
+function getCarbVars(board:any):any { // assumes all values in foods are in grams
+    // vars: [
+    //     { name: 'x1', coef: 0.6 },
+    //     { name: 'x2', coef: 0.5 }
+    // ]
+    let toRet:any = [];
+    for (const id in board) {
+        const fS = board[id]; // foodSquare
+        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+            toRet.push({ name: id, coef: parseInt(fS.food["nutrition_details"]["carbohydrateContent"]["value"]) });
+        }
+    }
+    return toRet;
+}
+// Returns array of foods with corresponding fat
+function getProteinVars(board:any):any { // assumes all values in foods are in grams
+    // vars: [
+    //     { name: 'x1', coef: 0.6 },
+    //     { name: 'x2', coef: 0.5 }
+    // ]
+    let toRet:any = [];
+    for (const id in board) {
+        const fS = board[id]; // foodSquare
+        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+            toRet.push({ name: id, coef: parseInt(fS.food["nutrition_details"]["proteinContent"]["value"]) });
+        }
+    }
+    return toRet;
+}
+// TODO Add in dietary restrictions into calculation
+function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):any { // creates a bunch of single variable constraints for required/banned foods, dietary restrictions
+    // subjectTo: [
+    //     {
+    //     name: 'cons1',
+    //         vars: [
+    //             { name: 'x1', coef: 1.0 },
+    //             { name: 'x2', coef: 2.0 }
+    //         ],
+    //         bnds: { type: glpk.GLP_UP, ub: 1.0, lb: 0.0 }
+    //     },
+    //     {
+    //         name: 'cons2',
+    //         vars: [
+    //             { name: 'x1', coef: 3.0 },
+    //             { name: 'x2', coef: 1.0 }
+    //         ],
+    //         bnds: { type: glpk.GLP_UP, ub: 2.0, lb: 0.0 }
+    //     }
+    // ]
+
+    // gung.FoodSquare = class {
+    //     constructor(foodo) {
+    //         this.food = foodo;
+    //         this.required = false;
+    //         this.banned = false;
+    //         this.quantity = 0;
+    //     }
+    // }
+    let toRet:any = [];
+    for (const id in board) {
+        // console.log("A Priori: "+(typeof board[property].required));
+        const fS = board[id]; // foodSquare
+        if (fS.required) { // we need at least the required amount for this food variable
+            toRet.push(
+                {
+                    name: fS.food["label"],
+                    vars: [
+                        { name: id, coef: 1.0 }
+                    ],
+                    bnds: { type: glpk.GLP_LO, lb: fS.quantity }
+                }
+            );
+        } else if (fS.banned || fS.food["tier"] == 1 /* add in dietary restrictions */) { // lets keep condiments out of meal generation for now, can fix later
+            toRet.push(
+                {
+                    name: fS.food["label"],
+                    vars: [
+                        { name: id, coef: 1.0 }
+                    ],
+                    bnds: { type: glpk.GLP_FX, lb: 0,ub: 0 }
+                }
+            );
+        }
+    }
+    return toRet;
+}
+// validFoods is all the ids of foods we're considering for eating (really just used in case we do/don't want to include tier 1 in the future, since validFoods is made in a function that excludes tier 1's)
+function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,validFoods:string[]):any {
+    // All foods must add up to macronutrients ratios and calorie limit
+        // For stuff like required and banned, we can use the api for constraints; byoutiful
+    // Each variable is a frequency of a food item, so there are as many as there are valid foods to choose from
+        // Each equation represents one dimensions I'm constraining to: in this case let's assume it's just the three macronutrients and calories
+    let gramsfat:number = k/9; // number of calories divided by 9 calories per gram of fat
+    let gramscarbohydrate:number = k/4; // number of calories divided by 4 calories per gram of carbohydrate
+    let gramsprotein:number = k/4; // number of calories divided by 4 calories per gram of protein
+    let calories:any = 
+        {
+        name: 'calories',
+            vars: getCalVars(board),
+            bnds: { type: glpk.GLP_UP, ub: k, lb: 0 }
+        };
+    let fat:any = 
+    {
+    name: 'fat',
+        vars: getFatVars(board),
+        bnds: { type: glpk.GLP_FX, ub: gramsfat, lb: gramsfat }
+    };
+    let carbohydrates:any = 
+    {
+    name: 'carbohydrates',
+        vars: getCarbVars(board),
+        bnds: { type: glpk.GLP_FX, ub: gramscarbohydrate, lb: gramscarbohydrate }
+    };
+    let protein:any = 
+    {
+    name: 'protein',
+        vars: getProteinVars(board),
+        bnds: { type: glpk.GLP_FX, ub: gramsprotein, lb: gramsprotein }
+    };
+    let reqbans:any = calculateRequiredsBanneds(board,v,ve,gf); // constraints for required/banned
+    return [calories,fat,carbohydrates,protein].concat(reqbans);
+}
+function createIntegers(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):string[] {
+    let toRet:string[] = [];
+    for (const id in board) {
+        // console.log("A Priori: "+(typeof board[property].required));
+        const fS = board[id]; // foodSquare
+        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+            toRet.push(id);
+        }
+    }
+    return toRet;
+}
+// For future refactor: just make the inputs these items from the Options interface (see method internal) 
+function createOptions(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
+    // interface Options {
+    //     mipgap?: number,    /* set relative mip gap tolerance to mipgap, default 0.0 */
+    //     tmlim?: number,     /* limit solution time to tmlim seconds, default INT_MAX */
+    //     msglev?: number,    /* message level for terminal output, default GLP_MSG_ERR */
+    //     presol?: boolean,   /* use presolver, default true */
+    //     cb?: {              /* a callback called at each 'each' iteration (only simplex) */
+    //         call(result: Result),
+    //         each: number
+    //     }
+    // }
+    return {
+        msglev: glpk.GLP_MSG_ALL,
+        // https://www.ibm.com/docs/en/icos/12.9.0?topic=parameters-relative-mip-gap-tolerance
+            // Any number from 0.0 to 1.0; default: 1e-04.
+            // 5% from optimal is good enough, but I'll make it rougher at first
+        mipgap:0.5
+    };
+}
+// TODO
+function solutionToSquares(solution:any):Food[] {
+    console.log("CEE EHL GEE");
+    console.log(solution);
+    return [];
+}
+// k is kilocals
+async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):Promise<Food[]> {
     // Pretty basic
         // Overall plan: 
             // Some way to avoid stigler issues, don't want sucky meals
         // Objective (could be any of the following)
-            // Simple
-                // Stigler diet: buffet case (same as stigler, but everything costs zero)
-                // Maximize the variety of the foods; potentially represented by a metric summing the residuals from the mean for each macronutrient in their ratio
-                    // A chat driven version of this for crunch might work out
-            // Heuristic/Chat Driven
-                // Stigler diet: small plates case (same as stigler, but we use some approximate metric of number of plates or plate size to minimize by)
-                // How about just minimizing the number of different foods appearing, in order to make it easy to gather them
-                    // Like with boolean variables
-                // I could try optimizing by having the foods chosen be from the fewest number of stations possible
-                    // Objective could be then minimizing the sets of boolean variables representing different stations
-                // Chat-GPT generated parameters for every food, eg crunchiness or sweet/salt to make it more palatable than the apparently ridiculed stigler diet
+            // See createObjective
         // Constraints
-            // All foods must add up to macronutrients ratios and calorie limit
+            // See createConstraints
+    // Next goal: Programmatically fill all these features with different functions
+        // Could end up in a similar situation to the backend, where I see repeated work and then refactor into something more efficient
+    let validFoods:string[] = createIntegers(board,v,ve,gf,k,f,c,p);
     const lp = {
-        name: 'LP',
-        objective: {
-            direction: glpk.GLP_MAX,
-            name: 'obj',
-            vars: [
-                { name: 'x1', coef: 0.6 },
-                { name: 'x2', coef: 0.5 }
-            ]
-        },
-        subjectTo: [
-            {
-            name: 'cons1',
-                vars: [
-                    { name: 'x1', coef: 1.0 },
-                    { name: 'x2', coef: 2.0 }
-                ],
-                bnds: { type: glpk.GLP_UP, ub: 1.0, lb: 0.0 }
-            },
-            {
-                name: 'cons2',
-                vars: [
-                    { name: 'x1', coef: 3.0 },
-                    { name: 'x2', coef: 1.0 }
-                ],
-                bnds: { type: glpk.GLP_UP, ub: 2.0, lb: 0.0 }
-            }
-        ]
+        name: 'Meal Generation',
+        objective: createObjective(board,v,ve,gf,k,f,c,p),
+        subjectTo: createConstraints(board,v,ve,gf,k,f,c,p,validFoods),
+          /* integer */
+        generals : validFoods
     };
+    const opt = createOptions(board,v,ve,gf,k,f,c,p);
 
-    const opt = {
-        msglev: glpk.GLP_MSG_OFF
-    };
-
-    // glpk.solve(lp, opt)
-    //     .then(res => print(res))
-    //     .catch(err => console.log(err));
-
-    console.log(await glpk.solve(lp, glpk.GLP_MSG_DBG));
-    return [];
+    // console.log(
+    // await (glpk.solve(lp, opt)
+    // .then((res: any) => console.log(res))
+    // .catch((err: any) => console.log(err))));
+    return solutionToSquares(glpk.solve(lp, opt)); /* Converts the solution into the food square object */
 }
 async function bonSiteUp():Promise<string> {
     // puppeteering
@@ -418,7 +596,6 @@ router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cr
     let cratio:number = parseInt(req.params.cratio);
     let pratio:number = parseInt(req.params.pratio);
 
-    console.log(`f: ${typeof fratio}`);
     let meal:Food[] = await generateMeal(board,
         vegetarian==="true",
         vegan==="true",
