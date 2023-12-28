@@ -3,6 +3,7 @@
     // Implement dietary preference filtering
     // Implement hover nutrition details
     // Implement running requirements nutrition and final output nutrition locations
+        // Implement cases for when there just is no feasible meal with the given requirements
 
 // Refactor to minimize backend calls if caching doesn't speed up enough
 
