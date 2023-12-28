@@ -153,7 +153,8 @@ function createObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:nu
             // }
         }
         // TEST CODE BELOW
-        objective = getFatVars(c,true,board);
+        objective = getProteinVars(p,true,board).concat(getCarbVars(c,true,board)).concat(getFatVars(f,true,board));
+        // objective = [{name:"actuallyzero",coef: 1.0}];
         // console.log("Objetivo: "+objective);
         // objective.push({ name : "f5423187", coef: 1.0 });
         // objective.push({ name : "f5423174", coef: 1.0 });
@@ -368,25 +369,26 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
     name: 'fat',
 //USED TO:    // (total calories from fat/f%) - (total calories from carb/c%) = 0
         vars: getFatVars(f,true,board),
-        bnds: { type: glpk.GLP_DB, lb: k*(f/100)*0.5, ub: k*(f/100)*1.5 }
+        bnds: { type: glpk.GLP_DB, lb: k*(f/100)*0.1, ub: k*(f/100)*1.9 }
     };
     let carbohydrates:any = 
     {
     name: 'carbohydrates',
 //USED TO:    // (total calories from fat/f%) - (total calories from protein/p%) = 0
         vars: getCarbVars(c,true,board),
-        bnds: { type: glpk.GLP_DB, lb: k*(c/100)*0.5, ub: k*(c/100)*1.5 },
+        bnds: { type: glpk.GLP_DB, lb: k*(c/100)*0.1, ub: k*(c/100)*1.9 },
     };
     let protein:any = 
     {
     name: 'protein',
 //USED TO:    // (total calories from protein/p%) - (total calories from carb/c%) = 0
         vars: getProteinVars(p,true,board),
-        bnds: { type: glpk.GLP_DB, lb: k*(p/100)*0.5, ub: k*(p/100)*1.5 }
+        bnds: { type: glpk.GLP_DB, lb: k*(p/100)*0.1, ub: k*(p/100)*1.9 }
     };
     let reqbans:any = calculateRequiredsBanneds(board,v,ve,gf); // constraints for required/banned
-    // return [calories,fat,carbohydrates,protein].concat(reqbans);
-    return [calories,fat];
+    console.log("reconquista: "+reqbans.length);
+    // return (reqbans.length > 0)?[calories,fat,carbohydrates,protein].concat(reqbans):[calories,fat,carbohydrates,protein];
+    return [calories,fat,protein,carbohydrates];
 }
 function createIntegers(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):string[] {
     let toRet:string[] = [];
@@ -412,11 +414,11 @@ function createOptions(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:numb
     //     }
     // }
     return {
-        msglev: glpk.GLP_MSG_ALL ,
+        // mipgap:1000,
+        msglev: glpk.GLP_MSG_ALL,
         // https://www.ibm.com/docs/en/icos/12.9.0?topic=parameters-relative-mip-gap-tolerance
             // Any number from 0.0 to 1.0; default: 1e-04.
             // 5% from optimal is good enough, but I'll make it rougher at first
-        // mipgap:1000,
         tmlim: 10
     };
 }
@@ -435,9 +437,9 @@ function solutionToSquares(solution:any,board:any):Food[] {
             console.log(cur["id"]+": "+cur["label"]+" x "+foods[i][1]);
         }
         k += foods[i][1]*(parseInt(cur["nutrition_details"]["calories"]["value"])?parseInt(cur["nutrition_details"]["calories"]["value"]):(9*10)+(4*10)+(4*10));
-        // f += (parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10);
-        // c += (parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
-        // p += (parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
+        f += foods[i][1]*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10);
+        c += foods[i][1]*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
+        p += foods[i][1]*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
         // console.log("Name: "+cur["label"]);
         // console.log(`calories: ${Object.entries(cur["nutrition_details"]["calories"])}`);
         // console.log(`fat: ${Object.entries(cur["nutrition_details"]["fatContent"])}`);
@@ -445,6 +447,7 @@ function solutionToSquares(solution:any,board:any):Food[] {
         // console.log(`protein: ${Object.entries(cur["nutrition_details"]["proteinContent"])}`);
     }
     console.log("Caloria: "+k);
+    console.log(`f: ${f}, c: ${c}, p: ${p}`);
     return [];
 }
 // k is kilocals
@@ -696,7 +699,28 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
         // Don't put newlines, even if it looks better, the url string
     // How do I access the info stored in a result object?
         // Object.entries
-
+    // In MIP hell
+        // Formulation is king
+            // And since I'm not good at it, Google's Stigler representation might as well be an anchor
+        // The key to escaping is not trying to set solely an upper or lower bound, nor is it cleverly algebra-ing in ratio constraints
+            // Also, it looks like I need to make sure that the objective has corresponding information (fat if fat is objective) to the constraints
+                // Makes sense, how else would it know about the problem
+        // Just account for the real fuzziness of the protein, fat, and carb translation to calories by having a nice fat double bound confidence interval around the expected value
+        // This is getting into the realm of superstition, but maybe the success had to do with the fact that I changed everything to the same units
+            // https://or.stackexchange.com/questions/8049/detect-numerical-instability-with-large-scale-optimization-problems
+                // In general, I think it is difficult if not impossible to look at a model and say, prior to any computations, that it is going to be unstable ... with one exception. If the largest and smallest absolute values of nonzero constraint coefficients differ by too many orders of magnitude, then you are living dangerously. The model might still be stable, but a wide range of coefficient magnitudes raises the likelihood of instability. Looking at the objective coefficients, I don't know that a wide range of magnitudes would signal likely instability in the sense of basis matrices having large condition numbers, but it could signal potential rounding problems that might lead to suboptimal solutions. Some solvers provide an easy means to inspect the range of magnitudes.
+            // It just seems like these problems are bullshit and you have to trial-and-error your way through
+                // https://or.stackexchange.com/questions/834/best-practices-for-formulating-mips
+                // Either that or painfully math: https://orinanobworld.blogspot.com/2010/08/ill-conditioned-bases-and-numerical.html
+                    // https://or.stackexchange.com/questions/135/what-is-the-big-m-method-and-are-there-two-of-them
+                    // https://orinanobworld.blogspot.com/2011/07/perils-of-big-m.html
+                    // Or money: https://or.stackexchange.com/questions/8049/detect-numerical-instability-with-large-scale-optimization-problems
+                        // Require tech support: https://support.gurobi.com/hc/en-us/community/posts/360050541152-High-instability-of-an-MIP-
+    // Can't get protein, carbohydrates, and fats to play well together
+        // If I get desperate enough, I can revert to java alg
+        // Either that or https://docs.mosek.com/modeling-cookbook/mio.html
+            // The cookbook recommended on https://developers.google.com/optimization/mip
+            
 // Create
 router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cratio/:pratio/', async function(req:any, res:any) {
     // gung.FoodSquare = class {
