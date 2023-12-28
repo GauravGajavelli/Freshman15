@@ -1,3 +1,9 @@
+// TODO
+    // Implement searching
+    // Implement dietary preference filtering
+    // Implement hover nutrition details
+    // Implement running requirements nutrition and final output nutrition locations
+
 // Refactor to minimize backend calls if caching doesn't speed up enough
 
 // When adding new stuff
@@ -94,62 +100,62 @@ gung.FoodController = class {
 
         document.querySelector("#calories").onchange = (event) => {
             let val = document.querySelector("#calories");
-            let newVal = val;
-            if (val < 0) {
-                newVal = 0;
-            } else if (val > 10000) {
-                newVal = 10000;
-            }
+            let newVal = val.value;
+            // if (val < 0) {
+            //     newVal = 0;
+            // } else if (val > 10000) {
+            //     newVal = 10000;
+            // }
+            // val.value = newVal;
             this.model.setCalories(newVal);
-            val.value = newVal;
         }
         document.querySelector("#fat").onchange = (event) => {
             let f = document.querySelector("#fat");
             let c = document.querySelector("#carbohydrate");
             let p = document.querySelector("#protein");
             let newVal = f.value;
-            if (f.value < 0) {
-                newVal = 0;
-            } else if ((f.value+c.value+p.value) <= 100) { // It'll complete the %
-                newVal = 100-c.value-p.value;
-            } else if ((f.value+c.value+p.value) > 100) { // It'll destroy the others lel
-                p.value = 0;
-                c.value = 0;
-            }
+            // if (f.value < 0) {
+            //     newVal = 0;
+            // } else if ((f.value+c.value+p.value) <= 100) { // It'll complete the %
+            //     newVal = 100-c.value-p.value;
+            // } else if ((f.value+c.value+p.value) > 100) { // It'll destroy the others lel
+            //     p.value = 0;
+            //     c.value = 0;
+            // }
+            // val.value = newVal;
             this.model.setFat(newVal);
-            val.value = newVal;
         }
         document.querySelector("#carbohydrate").onchange = (event) => {
-            let f = document.querySelector("#fat");
-            let c = document.querySelector("#carbohydrate");
-            let p = document.querySelector("#protein");
+            // let f = document.querySelector("#fat");
+            // let c = document.querySelector("#carbohydrate");
+            // let p = document.querySelector("#protein");
             let newVal = c.value;
-            if (c.value < 0) {
-                newVal = 0;
-            } else if ((f.value+c.value+p.value) <= 100) { // It'll complete the %
-                newVal = 100-f.value-p.value;
-            } else if ((f.value+c.value+p.value) > 100) { // It'll destroy the others lel
-                f.value = 0;
-                p.value = 0;
-            }
+            // if (c.value < 0) {
+            //     newVal = 0;
+            // } else if ((f.value+c.value+p.value) <= 100) { // It'll complete the %
+            //     newVal = 100-f.value-p.value;
+            // } else if ((f.value+c.value+p.value) > 100) { // It'll destroy the others lel
+            //     f.value = 0;
+            //     p.value = 0;
+            // }
+            // val.value = newVal;
             this.model.setCarbohydrate(newVal);
-            val.value = newVal;
         }
         document.querySelector("#protein").onchange = (event) => {
-            let f = document.querySelector("#fat");
-            let c = document.querySelector("#carbohydrate");
-            let p = document.querySelector("#protein");
+            // let f = document.querySelector("#fat");
+            // let c = document.querySelector("#carbohydrate");
+            // let p = document.querySelector("#protein");
             let newVal = p.value;
-            if (c.value < 0) {
-                newVal = 0;
-            } else if ((f.value+c.value+p.value) <= 100) { // It'll complete the %
-                newVal = 100-f.value-c.value;
-            } else if ((f.value+c.value+p.value) > 100) { // It'll destroy the others lel
-                f.value = 0;
-                c.value = 0;
-            }
+            // if (c.value < 0) {
+            //     newVal = 0;
+            // } else if ((f.value+c.value+p.value) <= 100) { // It'll complete the %
+            //     newVal = 100-f.value-c.value;
+            // } else if ((f.value+c.value+p.value) > 100) { // It'll destroy the others lel
+            //     f.value = 0;
+            //     c.value = 0;
+            // }
+            // val.value = newVal;
             this.model.setProtein(newVal);
-            val.value = newVal;
         }
         this.updateList();
         this.updateView();
