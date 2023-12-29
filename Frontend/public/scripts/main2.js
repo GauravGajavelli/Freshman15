@@ -1,9 +1,9 @@
 // TODO
-    // Implement searching
-    // Implement dietary preference filtering
-    // Implement hover nutrition details
-    // Implement running requirements nutrition and final output nutrition locations
-        // Implement cases for when there just is no feasible meal with the given requirements
+    // Implement dietary preference filtering (vegetarian means we only show vegetarian foods, etc.)
+    // Implement hover nutrition details (for planned meal and individual items)
+    // Implement cases for when there just is no feasible meal with the given requirements
+    // Implement input cleaning for numbers
+    // (Resolved, see implement hover nutrition) Implement running requirements nutrition and final output nutrition locations
 
 // Refactor to minimize backend calls if caching doesn't speed up enough
 
@@ -37,7 +37,7 @@ gung.FoodSquare = class {
         this.food = foodo;
         this.required = false;
         this.banned = false;
-        this.quantity = 0;
+        this.quantity = 1;
     }
 }
 
@@ -288,15 +288,20 @@ gung.FoodController = class {
             </div>
             `);
         } else { // neither banned nor required: a final meal item
-            console.log("Mio diamante");
+            let perServing = parseFloat(fs.food["nutrition_details"]?fs.food["nutrition_details"]["servingSize"]["value"]:"1");
+            let units = fs.food["nutrition_details"]?fs.food["nutrition_details"]["servingSize"]["unit"]:"units";
             console.log(Object.entries(fs));
             return gung.htmlToElement(`
             <div id="f${fs.food["id"]}" class="flex-container5">
             <span>${fs.food["label"]}</span>
-            <button>${fs.quantity}</button>
+            <button>${this.roundNum(fs.quantity*perServing)} ${units}</button>
             </div>
             `);
         }
+    }
+    // Rounds to nearest 10th
+    roundNum(num) {
+        return Math.round(num * 10) / 10;
     }
     _setUpClick(square,fs) {
         if (fs.banned) {

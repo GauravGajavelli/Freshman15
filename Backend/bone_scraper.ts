@@ -5,6 +5,8 @@
     // - Make it run like 10x tries for a good result (measured by the matches system of previous email or something like a MAE or MSE threshold over all macronutrient percentages) - I could array all the solutions and do an in place sort with a comparator like a head, like so: https://stackoverflow.com/questions/17420773/how-to-make-a-efficient-comparator-for-javascript-sort-function-for-sorting-an-a
         // - Previous email: A way to mitigate this disobedient nature is to categorize solutions into 3*2 = six possibilities for what macronutrient is highest and what's the lowest and try the various methods repeatedly until we get as close a match (rank the results by similarity to the desired quantity in three tiers: 2 being both highest and lowest macro match what the highest/lowest were in the request, 1 being either matches, and 0 being neither do) - Then just return that lel
         // Do this from inside meal gen function, then call the sort on solutions that made it through, and send the best one back if possible
+    // Implement dietary preference filtering (vegetarian means we only show vegetarian foods, etc.)
+    // ctrl+f todo
 
 console.log("Hello Bon");
 
@@ -308,6 +310,48 @@ function getProteinCarbVars(p:number,c:number,board:any):any { // assumes all va
     }
     return toRet;
 }
+function getFatVars(board:any):any { // assumes all values in foods are in grams
+    let toRet:any = [];
+    for (const id in board) {
+        const fS = board[id]; // foodSquare
+        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+            let cal = parseInt(fS.food["nutrition_details"]["fatContent"]["value"]);
+            if (!cal) {
+                cal = 10;
+            }
+            toRet.push({ name: id, coef: (cal*9)});
+        }
+    }
+    return toRet;
+}
+function getCarbVars(board:any):any { // assumes all values in foods are in grams
+    let toRet:any = [];
+    for (const id in board) {
+        const fS = board[id]; // foodSquare
+        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+            let cal = parseInt(fS.food["nutrition_details"]["carbohydrateContent"]["value"]);
+            if (!cal) {
+                cal = 10;
+            }
+            toRet.push({ name: id, coef: (cal*4)});
+        }
+    }
+    return toRet;
+}
+function getProteinVars(board:any):any { // assumes all values in foods are in grams
+    let toRet:any = [];
+    for (const id in board) {
+        const fS = board[id]; // foodSquare
+        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+            let cal = parseInt(fS.food["nutrition_details"]["proteinContent"]["value"]);
+            if (!cal) {
+                cal = 10;
+            }
+            toRet.push({ name: id, coef: (cal*4)});
+        }
+    }
+    return toRet;
+}
 // TODO Add in dietary restrictions into calculation
 function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):any { // creates a bunch of single variable constraints for required/banned foods, dietary restrictions
     let duplicatesAllowed:number = 2;
@@ -325,13 +369,15 @@ function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):an
                 }
             );
         } else if (fS.required) { // we need at least the required amount for this food variable
+            console.log("MY DAD: "+id);
+            console.log("My dad quantities: "+fS.food["nutrition_details"]);
             toRet.push(
                 {
                     name: fS.food["label"],
                     vars: [
                         { name: id, coef: 1.0 }
                     ],
-                    bnds: { type: glpk.GLP_DB, lb: fS.quantity, ub:fS.quantity+duplicatesAllowed }
+                    bnds: { type: glpk.GLP_DB, lb: fS.quantity, ub:duplicatesAllowed+fS.quantity }
                 }
             );
         } else { // Global limits to one each
@@ -357,38 +403,70 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
     name: 'calories',
         vars: getCalVars(board),
         // Ranges predicated on meal caloric range being 500 to 1500
-        bnds: { type: glpk.GLP_UP, ub: k<1000?k*0.9:k*0.7 } /** to account for using LPs and always rounding up */
+        bnds: { type: glpk.GLP_UP, ub: k<=1000?k*0.9:k*0.7 } /** to account for using LPs and always rounding up */
             // Coupled with the max amount of repeats; 0.9 as an upper k works okay with max repeats of 2, ig but everythings inconsistent
     };
     if (use_int) {
         calories["bnds"] = { type: glpk.GLP_DB, lb: k*0.9, ub: k*1.1 };
     }
-    // (total calories from fat/f%) - (total calories from protein/p%) = 0
-    let fatProtein:any = 
-    {
-    name: 'fatProtein',
-        vars: getFatProteinVars(f,p,board),
-        bnds: { type: glpk.GLP_DB, lb: -0.1, ub: 0.1 }
-    };
-    // (total calories from carb/c%) - (total calories from fat/f%) = 0
-    let carbohydratesFat:any = 
-    {
-    name: 'carbohydratesFat',
-
-    vars: getCarbFatVars(c,f,board),
-        bnds: { type: glpk.GLP_DB, lb: -0.1, ub: 0.1 }
-    };
-    // (total calories from protein/p%) - (total calories from carb/c%) = 0
-    let proteinCarbohydrate:any = 
-    {
-    name: 'proteinCarbohydrate',
-        vars: getProteinCarbVars(p,c,board),
-        bnds: { type: glpk.GLP_DB, lb: -0.1, ub: 0.1 }
-    };
-
+    let constraints:any = [];
     let reqbans:any = calculateRequiredsBanneds(board,v,ve,gf); // constraints for required/banned
+    if (!use_int) {
+        // (total calories from fat/f%) - (total calories from protein/p%) = 0
+        let lenience:number = 0.1; // how far the ratios can stray, must be positive
+        let fatProtein:any = 
+        {
+        name: 'fatProtein',
+            vars: getFatProteinVars(f,p,board),
+            bnds: { type: glpk.GLP_DB, lb: -1*lenience, ub: lenience }
+        };
+        // (total calories from carb/c%) - (total calories from fat/f%) = 0
+        let carbohydratesFat:any = 
+        {
+        name: 'carbohydratesFat',
+
+        vars: getCarbFatVars(c,f,board),
+        bnds: { type: glpk.GLP_DB, lb: -1*lenience, ub: lenience }
+        };
+        // (total calories from protein/p%) - (total calories from carb/c%) = 0
+        let proteinCarbohydrate:any = 
+        {
+        name: 'proteinCarbohydrate',
+            vars: getProteinCarbVars(p,c,board),
+            bnds: { type: glpk.GLP_DB, lb: -1*lenience, ub: lenience }
+        };
+        constraints = [calories,/*fatProtein,*/carbohydratesFat/*,proteinCarbohydrate*/].concat(reqbans);
+    } else {
+        let calories:any = 
+        {
+        name: 'calories',
+            vars: getCalVars(board),
+            bnds: { type: glpk.GLP_DB, lb: k*0.9, ub: k*1.1 }
+        };
+        let fat:any = 
+        {
+        name: 'fat',
+    // Due to the insane nature of the discrepancies between macrograms and calories (you get way fewer than you should), a much higher ceiling on them is reasonable
+        // However, we should also add constraints of them relative to each other
+            vars: getFatVars(board),
+            bnds: { type: glpk.GLP_LO, lb: k*(f/100)}
+        };
+        let carbohydrates:any = 
+        {
+        name: 'carbohydrates',
+            vars: getCarbVars(board),
+            bnds: { type: glpk.GLP_LO, lb: k*(c/100)},
+        };
+        let protein:any = 
+        {
+        name: 'protein',
+            vars: getProteinVars(board),
+            bnds: { type: glpk.GLP_LO, lb: k*(p/100)}
+        };
+        constraints = [calories,fat,carbohydrates,protein].concat(reqbans);
+    }
     // I could use the proteinCarbohydrate, but by the transitive property it's taken care of AS LONG AS BOUNDS ARE OKAY ON THE OTHER TWO
-    return [calories,fatProtein,carbohydratesFat/*,proteinCarbohydrate*/].concat(reqbans); // the key was to use the techniques I learned; give the ratio breathing room (+- 0.1), try both giving and not giving extra information (symmetric eq), realuze that my problem is so simple relative to others' that glpk can prbably do it (why I had the confidence to search for the rror code that allowed me to realize the reason why protein and protein2 weren't enough were due to the lack of an overall calorie constraint; sometimes information is useful, sometimes it's bad. it needs breathing room to solve, but not infinite breathing room)
+    return constraints; // the key was to use the techniques I learned; give the ratio breathing room (+- 0.1), try both giving and not giving extra information (symmetric eq), realuze that my problem is so simple relative to others' that glpk can prbably do it (why I had the confidence to search for the rror code that allowed me to realize the reason why protein and protein2 weren't enough were due to the lack of an overall calorie constraint; sometimes information is useful, sometimes it's bad. it needs breathing room to solve, but not infinite breathing room)
 }
 function createIntegers(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):string[] {
     let toRet:string[] = [];
@@ -723,11 +801,15 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
         // If I get desperate enough, I can revert to java alg
         // Either that or https://docs.mosek.com/modeling-cookbook/mio.html
             // The cookbook recommended on https://developers.google.com/optimization/mip
+        // SOLUTION: Check your math, don't multiply where you should divide, vice versa
     // I got protein, carbohydrates, and fats to play well together, but now it never converges
         // Go to linear programming, and just ceiling after setting a caloric threshold below what works
         // Tested: 0.9*calories upper bound, 2 duplicates at most for each
             // Works within about 100 calories for meals between 500 and 1500 calories
         // It seems there's no free lunch with this linear programming/optimization business
+    // Requiring not working
+        // I had to set the quantity to 1 by default
+
 // Create
 router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cratio/:pratio/', async function(req:any, res:any) {
     // gung.FoodSquare = class {
@@ -756,7 +838,17 @@ router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cr
         cratio,
         pratio,
         false); // returns an array of the foods
-    
+    if (meal.length == 0) {
+        meal = await generateMeal(board,
+            vegetarian==="true",
+            vegan==="true",
+            glutenfree==="true",
+            calories,
+            fratio,
+            cratio,
+            pratio,
+            true);
+    }
     // TODO Implement algorithm for trying multiple methods before quitting
 
     res.send(meal);
