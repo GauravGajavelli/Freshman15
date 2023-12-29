@@ -161,7 +161,7 @@ function gaussianRandom(mean:number, stdev:number):number {
 // Creates a objective function
 // Coefficents are normally distributed random numbers in the ballpark of the sum of macronutrients by having same mean, sd
 function research(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
-    let toRet:any = [];
+    /*let toRet:any = [];
     let i:number = 0;
     for (const id in board) {
         const fS = board[id]; // foodSquare
@@ -203,6 +203,38 @@ function research(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:
             toRet.push({ name: id, coef: gaussianRandom(retAvg,retSd)});
         }
     }
+    return toRet;*/
+ 
+    /*// new research: using the objective function to incentivize proportional meals
+    let toRet:any = [];
+    for (const id in board) {
+        const fS = board[id]; // foodSquare
+        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
+            let cal = parseInt(fS.food["nutrition_details"]["fatContent"]["value"]);
+            if (!cal) {
+                cal = 10;
+            }            
+            let cil = parseInt(fS.food["nutrition_details"]["carbohydrateContent"]["value"]);
+            if (!cil) {
+                cil = 10;
+            }
+            let col = parseInt(fS.food["nutrition_details"]["proteinContent"]["value"]);
+            if (!col) {
+                col = 10;
+            }
+            toRet.push({ name: id, coef: ((cal*9)/(f/100))+((cil*4)/(c/100))+((col*4)/(p/100))});
+        }
+    }
+    return toRet;*/
+ 
+    // new new research: maximizing tier 0, the main courses
+    let toRet:any = [];
+    for (const id in board) {
+        const fS = board[id]; // foodSquare
+        if (fS.food["tier"] == 0) {
+            toRet.push({ name: id, coef: 1.0});
+        }
+    }
     return toRet;
 }
 // TODO add better objectives
@@ -224,11 +256,12 @@ function createObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:nu
         // Since our normalized price is free, I'd say our objective would simply be to maximize z = 0*f1+0*f2+0*f3+... = 0
             // f1, f2, ... denote the food names, but I'll just use food ids or names to keep it simpler
 
-            let objective:any = getCalVars(board); // works, maximizes cals
+        let objective:any = research(board,v,ve,gf,k,f,c,p); // works, maximizes cals
+        // objective = getCalVars(board);
         // objective = research(board,v,ve,gf,k,f,c,p); // works, just gives normally distributed random numbers in the ballpark of the sum of macronutrients
         return {
         direction: glpk.GLP_MAX,
-        name: 'Stigler Diet: Max Calories',
+        name: 'Tier Zero Maximizer',
         vars: objective
     };
 }
@@ -435,7 +468,7 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
             vars: getProteinCarbVars(p,c,board),
             bnds: { type: glpk.GLP_DB, lb: -1*lenience, ub: lenience }
         };
-        constraints = [calories,/*fatProtein,*/carbohydratesFat/*,proteinCarbohydrate*/].concat(reqbans);
+        constraints = [calories,fatProtein,carbohydratesFat/*,proteinCarbohydrate*/].concat(reqbans);
     } else {
         let calories:any = 
         {
@@ -537,10 +570,10 @@ function solutionToFoods(solution:any,board:any):FoodSquare[] {
         c1 += foods[i][1]*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
         p1 += foods[i][1]*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
     }
-    console.log("Calories (Actual): "+k);
-    console.log(`f: ${f}, c: ${c}, p: ${p}`);
     console.log("Calories (Predicted): "+k1);
     console.log(`f: ${f1}, c: ${c1}, p: ${p1}`);
+    console.log("Calories (Actual): "+k);
+    console.log(`f: ${f}, c: ${c}, p: ${p}`);
     return toRet;
 }
 async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,use_int:boolean):Promise<FoodSquare[]> {
@@ -809,7 +842,13 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
         // It seems there's no free lunch with this linear programming/optimization business
     // Requiring not working
         // I had to set the quantity to 1 by default
-
+    // PayloadTooLargeError
+        // Okay, so a band-aid is 
+            /**app.use(myParser.json({limit: '200mb'}));
+               app.use(myParser.urlencoded({limit: '200mb', extended: true})); */
+            // But the real solution could be modifying the way I'm posting and responding with the entire meals
+            // To instead use a date sent and an id in lieu of the massive food object, and then just picking up the relevant menu from save file
+                // I don't actually have to do that, I just thought of it and that should be fine for this case
 // Create
 router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cratio/:pratio/', async function(req:any, res:any) {
     // gung.FoodSquare = class {
