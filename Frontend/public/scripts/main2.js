@@ -175,6 +175,12 @@ gung.FoodController = class {
 		oldReqs.append(reqHeader);
         oldBans.append(banHeader);
     }
+    clearPlan() {
+        const oldPlan = document.querySelector(`#plan`);
+        oldPlan.innerHTML='';
+        const planHeader = gung.htmlToElement(`<h2>Planned Meal</h2>`);
+		oldPlan.append(planHeader);
+    }
     updateList() {
             const bOption = gung.htmlToElement(`<option value="0">Breakfast</option>`);
             const lOption = gung.htmlToElement(`<option value="1">Lunch</option>`);
@@ -219,6 +225,17 @@ gung.FoodController = class {
         oldBoard.parentElement.prepend(newBoard);
         oldBoard.parentElement.removeChild(oldBoard);
 		// oldList.parentElement.appendChild(newList);
+    }
+    setPlan(plannedMeal) {
+        // plannedMeal is an array of FoodSquares representing meal items
+        this.clearPlan();
+        for (let i = 0; i < plannedMeal.length; i++) {
+            const fs = plannedMeal[i];
+            console.log("Festus: "+fs);
+            const oldPlan = document.querySelector("#plan");
+            const newPlan = this._createItem(fs);
+            oldPlan.append(newPlan);
+        }
     }
     _createSquare(fs) {
         if (fs.banned) {
@@ -271,10 +288,12 @@ gung.FoodController = class {
             </div>
             `);
         } else { // neither banned nor required: a final meal item
+            console.log("Mio diamante");
+            console.log(Object.entries(fs));
             return gung.htmlToElement(`
             <div id="f${fs.food["id"]}" class="flex-container5">
             <span>${fs.food["label"]}</span>
-            <button>X</button>
+            <button>${fs.quantity}</button>
             </div>
             `);
         }
@@ -499,9 +518,9 @@ gung.Model = class {
             },
             body: JSON.stringify(this.board)
         });
-        const content = await resp.json();
-
-        console.log(content);
+        const plannedMeal = await resp.json();
+        console.log(plannedMeal);
+        this.controller.setPlan(plannedMeal);
     }
 }
 

@@ -80,6 +80,12 @@ type Food = {
     "sub_station_order": number,
     "monotony": {}
 }
+type FoodSquare = {
+    food:any, /* Would be Food type, but string stuff */
+    required:boolean,
+    banned:boolean,
+    quantity:number
+}
 // Returns specific sections of courses
 function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:meals,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean):Food {
     const toRet: Food = {
@@ -350,8 +356,8 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
     {
     name: 'calories',
         vars: getCalVars(board),
-        // bnds: { type: glpk.GLP_DB, lb: k*0.9, ub: k*1.1 }
-        bnds: { type: glpk.GLP_UP, ub: k*0.9 } /** to account for using LPs and always rounding up */
+        // Ranges predicated on meal caloric range being 500 to 1500
+        bnds: { type: glpk.GLP_UP, ub: k<1000?k*0.9:k*0.7 } /** to account for using LPs and always rounding up */
             // Coupled with the max amount of repeats; 0.9 as an upper k works okay with max repeats of 2, ig but everythings inconsistent
     };
     if (use_int) {
@@ -417,7 +423,7 @@ function createOptions(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:numb
     };
 }
 // TODO Get rid of default values once no longer applicable
-function solutionToFoods(solution:any,board:any):any {
+function solutionToFoods(solution:any,board:any):FoodSquare[] {
     console.log("GENERATED MEAL: ");
     let toRet:any = [];
     let foods:any = Object.entries(solution.result.vars);
@@ -432,18 +438,21 @@ function solutionToFoods(solution:any,board:any):any {
     let p1:number = 0;
     for (let i = 0; i < foods.length; i++) {
         let cur:any = board[foods[i][0]].food;
+        let qty:number = Math.ceil(foods[i][1]);
         if (foods[i][1] > 0) {
             console.log(cur["id"]+": "+cur["label"]+" x "+foods[i][1]);
-            toRet.push( {
-                food: cur,
-                quantity: foods[i][1]
-            } );
+            let toPush:FoodSquare = {
+                food:cur,
+                required:false,
+                banned:false,
+                quantity:qty
+            }
+            toRet.push(toPush);
         }
-        let quantity:number = Math.ceil(foods[i][1]);
-        k += quantity*(parseInt(cur["nutrition_details"]["calories"]["value"])?parseInt(cur["nutrition_details"]["calories"]["value"]):(9*10)+(4*10)+(4*10));
-        f += quantity*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10);
-        c += quantity*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
-        p += quantity*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
+        k += qty*(parseInt(cur["nutrition_details"]["calories"]["value"])?parseInt(cur["nutrition_details"]["calories"]["value"]):(9*10)+(4*10)+(4*10));
+        f += qty*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10);
+        c += qty*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
+        p += qty*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
 
         k1 += foods[i][1]*(parseInt(cur["nutrition_details"]["calories"]["value"])?parseInt(cur["nutrition_details"]["calories"]["value"]):(9*10)+(4*10)+(4*10));
         f1 += foods[i][1]*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10);
@@ -456,7 +465,7 @@ function solutionToFoods(solution:any,board:any):any {
     console.log(`f: ${f1}, c: ${c1}, p: ${p1}`);
     return toRet;
 }
-async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,use_int:boolean):Promise<any> {
+async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,use_int:boolean):Promise<FoodSquare[]> {
     let lp:any = {
         name: 'Meal Generation',
         objective: createObjective(board,v,ve,gf,k,f,c,p),
@@ -714,7 +723,11 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
         // If I get desperate enough, I can revert to java alg
         // Either that or https://docs.mosek.com/modeling-cookbook/mio.html
             // The cookbook recommended on https://developers.google.com/optimization/mip
-            
+    // I got protein, carbohydrates, and fats to play well together, but now it never converges
+        // Go to linear programming, and just ceiling after setting a caloric threshold below what works
+        // Tested: 0.9*calories upper bound, 2 duplicates at most for each
+            // Works within about 100 calories for meals between 500 and 1500 calories
+        // It seems there's no free lunch with this linear programming/optimization business
 // Create
 router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cratio/:pratio/', async function(req:any, res:any) {
     // gung.FoodSquare = class {
@@ -734,7 +747,7 @@ router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cr
     let fratio:number = parseInt(req.params.fratio)?parseInt(req.params.fratio):25;
     let cratio:number = parseInt(req.params.cratio)?parseInt(req.params.cratio):55;
     let pratio:number = parseInt(req.params.pratio)?parseInt(req.params.pratio):20;
-    let meal:any = await generateMeal(board,
+    let meal:FoodSquare[] = await generateMeal(board,
         vegetarian==="true",
         vegan==="true",
         glutenfree==="true",
@@ -743,6 +756,8 @@ router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cr
         cratio,
         pratio,
         false); // returns an array of the foods
+    
+    // TODO Implement algorithm for trying multiple methods before quitting
 
     res.send(meal);
 });
