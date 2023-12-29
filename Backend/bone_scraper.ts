@@ -150,6 +150,8 @@ function gaussianRandom(mean:number, stdev:number):number {
     // Transform to the desired mean and standard deviation:
     return z * stdev + mean;
 }
+// Creates a objective function
+// Coefficents are normally distributed random numbers in the ballpark of the sum of macronutrients by having same mean, sd
 function research(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
     let toRet:any = [];
     let i:number = 0;
@@ -177,14 +179,10 @@ function research(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:
         }
     }
 
-    let farr:any = toRet;
-    let retAvg:number = average(farr);
-    let retSd:number = getStandardDeviation(farr);
-    console.log("fAvg: "+retAvg);
-    console.log("fSd: "+retSd);
-
-    // console.log("halleluAvg: "+average(vals));
-    // console.log("jahSd: "+getStandardDeviation(vals));
+    let retAvg:number = average(toRet);
+    let retSd:number = getStandardDeviation(toRet);
+    console.log("Avg # calories: "+retAvg);
+    console.log("Sd # calories: "+retSd);
 
     toRet = [];
     for (const id in board) {
@@ -198,22 +196,8 @@ function research(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:
         }
     }
     return toRet;
-    
-    // let filepath = "files/";
-    // let filename = "food_totals";
-    // let dir_exists = fs.existsSync(filepath);
-    // if (!dir_exists) { // If the directory already exists
-    //     fs.promises.mkdir(filepath,{ recursive: true });
-    // }
-    // fs.writeFile(filepath+filename+".json", JSON.stringify({farr}), function(err:any, buf:any ) {
-    //     if(err) {
-    //         console.log("error: ", err);
-    //     } else {
-    //         console.log("Food arr saved successfully!");
-    //     }
-    // });
 }
-// TODO for future refactor: Will need to know all of the variable names
+// TODO add better objectives
 function createObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
     // Objective (could be any of the following)
         // Simple
@@ -231,42 +215,21 @@ function createObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:nu
         // Well the cost of all of the items would've been their frequencies added up since they were all normalized to quantities that had the same price
         // Since our normalized price is free, I'd say our objective would simply be to maximize z = 0*f1+0*f2+0*f3+... = 0
             // f1, f2, ... denote the food names, but I'll just use food ids or names to keep it simpler
-        let objective:any = [];
-        for (const id in board) {
-            const fS = board[id];
-            // if (fS.food["tier"] == 2) {
-                objective.push({ name : id, coef: Math.random() });
-            // }
-        }
-        // TEST CODE BELOW
-        objective = getCalVars(board); // works
-        // objective = getProteinVars(p,true,board).concat(getCarbVars(c,true,board)).concat(getFatVars(f,true,board)); // works
-        // objective = research(board,v,ve,gf,k,f,c,p); // works
-        // objective = getProteinVars(p,true,board);
-        // objective = [{name:"actuallyzero",coef: 1.0}];
-        // console.log("Objetivo: "+objective);
-        // objective.push({ name : "f5423187", coef: 1.0 });
-        // objective.push({ name : "f5423174", coef: 1.0 });
-        // objective.push({ name : "f5423169", coef: 1.0 });
 
-
+            let objective:any = getCalVars(board); // works, maximizes cals
+        // objective = research(board,v,ve,gf,k,f,c,p); // works, just gives normally distributed random numbers in the ballpark of the sum of macronutrients
         return {
         direction: glpk.GLP_MAX,
         name: 'Stigler Diet: Max Calories',
         vars: objective
     };
 }
-// TODO Null check won't matter, so I should 
+// TODO Null check won't matter, so I should get rid of the "default" (10*9)+(10*4)+(10*4) stuff
 // Returns array of foods with corresponding calories
 function getCalVars(board:any):any {
-    // vars: [
-    //     { name: 'x1', coef: 0.6 },
-    //     { name: 'x2', coef: 0.5 }
-    // ]
     let toRet:any = [];
     for (const id in board) {
         const fS = board[id]; // foodSquare
-    // if (id == "f5423187" || id == "f5423174" || id == "f5423169") {
         if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
             let cal = parseInt(fS.food["nutrition_details"]["calories"]["value"]);
             if (!cal) {
@@ -274,32 +237,12 @@ function getCalVars(board:any):any {
             }
             toRet.push({ name: id, coef: cal });
         }
-    // }
     }
     return toRet;
 }
-// Returns array of foods with corresponding fat
-//
-// constraint one: f must be prop to c
-// (total calories from fat/f%)
-function getFatVars(f:number,p:number,positive:boolean,board:any):any { // assumes all values in foods are in grams
-    // vars: [
-    //     { name: 'x1', coef: 0.6 },
-    //     { name: 'x2', coef: 0.5 }
-    // ]
-    /*let toRet:any = [];
-    for (const id in board) {
-        const fS = board[id]; // foodSquare
-        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
-            let cal = parseInt(fS.food["nutrition_details"]["fatContent"]["value"]);
-            if (!cal) {
-                cal = 10;
-            }
-            toRet.push({ name: id, coef: cal });
-        }
-    }
-    return toRet;*/
-
+// Returns array of variables for the constraint: 
+// (total calories from fat/f%)-(total calories from protein/p%) = 0
+function getFatProteinVars(f:number,p:number,board:any):any { // assumes all values in food nutritions are in grams
     let toRet:any = [];
     for (const id in board) {
         const fS = board[id]; // foodSquare
@@ -307,40 +250,19 @@ function getFatVars(f:number,p:number,positive:boolean,board:any):any { // assum
             let cal = parseInt(fS.food["nutrition_details"]["fatContent"]["value"]);
             if (!cal) {
                 cal = 10;
-            }
-            // TEST MULTIPLYING BY f and p
-            
+            }            
             let col = parseInt(fS.food["nutrition_details"]["proteinContent"]["value"]);
             if (!col) {
                 col = 10;
             }
-            toRet.push({ name: id, coef: ((positive?1:-1)*(cal*9)/(f/100))+((positive?-1:1)*(col*4)/(p/100))/*/(f/100)*/});
+            toRet.push({ name: id, coef: ((cal*9)/(f/100))+((-1)*(col*4)/(p/100))});
         }
     }
     return toRet;
 }
-// Returns array of foods with corresponding carbohydrates
-// 
-// constraint two: f must be prop to p
-// (total calories from carb/c%) = 0
-function getCarbVars(c:number,f:number,positive:boolean,board:any):any { // assumes all values in foods are in grams
-    // vars: [
-    //     { name: 'x1', coef: 0.6 },
-    //     { name: 'x2', coef: 0.5 }
-    // ]
-    /*let toRet:any = [];
-    for (const id in board) {
-        const fS = board[id]; // foodSquare
-        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
-            let cal = parseInt(fS.food["nutrition_details"]["carbohydrateContent"]["value"]);
-            if (!cal) {
-                cal = 10;
-            }
-            toRet.push({ name: id, coef: cal });
-        }
-    }
-    return toRet;*/
-
+// Returns array of variables for the constraint: 
+// (total calories from carbohydrate/c%)-(total calories from fat/f%) = 0
+function getCarbFatVars(c:number,f:number,board:any):any {
     let toRet:any = [];
     for (const id in board) {
         const fS = board[id]; // foodSquare
@@ -354,33 +276,14 @@ function getCarbVars(c:number,f:number,positive:boolean,board:any):any { // assu
             if (!col) {
                 col = 10;
             }
-            toRet.push({ name: id, coef: ((positive?1:-1)*(cal*4)/(c/100))+((positive?-1:1)*(col*9)/(f/100))/*/(c/100)*/});
+            toRet.push({ name: id, coef: ((cal*4)/(c/100))+((-1)*(col*9)/(f/100))});
         }
     }
     return toRet;
 }
-// Returns array of foods with corresponding fat
-// 
-// constraint three: p must be prop to c
-// (total calories from protein/p%)
-function getProteinVars(p:number,c:number,positive:boolean,board:any):any { // assumes all values in foods are in grams
-    // vars: [
-    //     { name: 'x1', coef: 0.6 },
-    //     { name: 'x2', coef: 0.5 }
-    // ]
-    /*let toRet:any = [];
-    for (const id in board) {
-        const fS = board[id]; // foodSquare
-        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
-            let cal = parseInt(fS.food["nutrition_details"]["proteinContent"]["value"]);
-            if (!cal) {
-                cal = 10;
-            }
-            toRet.push({ name: id, coef: cal });
-        }
-    }
-    return toRet;*/
-
+// Returns array of variables for the constraint: 
+// (total calories from protein/p%)-(total calories from carbohydrate/c%) = 0
+function getProteinCarbVars(p:number,c:number,board:any):any { // assumes all values in foods are in grams
     let toRet:any = [];
     for (const id in board) {
         const fS = board[id]; // foodSquare
@@ -394,43 +297,16 @@ function getProteinVars(p:number,c:number,positive:boolean,board:any):any { // a
             if (!col) {
                 col = 10;
             }
-            toRet.push({ name: id, coef: ((positive?1:-1)*(cal*4)/(p/100)/*/(p/100)*/)+((positive?-1:1)*(col*4)/(c/100))});
+            toRet.push({ name: id, coef: ((cal*4)/(p/100))+((-1)*(col*4)/(c/100))});
         }
     }
     return toRet;
 }
 // TODO Add in dietary restrictions into calculation
 function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):any { // creates a bunch of single variable constraints for required/banned foods, dietary restrictions
-    // subjectTo: [
-    //     {
-    //     name: 'cons1',
-    //         vars: [
-    //             { name: 'x1', coef: 1.0 },
-    //             { name: 'x2', coef: 2.0 }
-    //         ],
-    //         bnds: { type: glpk.GLP_UP, ub: 1.0, lb: 0.0 }
-    //     },
-    //     {
-    //         name: 'cons2',
-    //         vars: [
-    //             { name: 'x1', coef: 3.0 },
-    //             { name: 'x2', coef: 1.0 }
-    //         ],
-    //         bnds: { type: glpk.GLP_UP, ub: 2.0, lb: 0.0 }
-    //     }
-    // ]
-
-    // gung.FoodSquare = class {
-    //     constructor(foodo) {
-    //         this.food = foodo;
-    //         this.required = false;
-    //         this.banned = false;
-    //         this.quantity = 0;
-    //     }
-    // }
+    let duplicatesAllowed:number = 2;
     let toRet:any = [];
     for (const id in board) {
-        // console.log("A Priori: "+(typeof board[property].required));
         const fS = board[id]; // foodSquare
         if (fS.banned || fS.food["tier"] == 1 /* add in dietary restrictions */) { // lets keep condiments out of meal generation for now, can fix later
             toRet.push(
@@ -449,7 +325,7 @@ function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):an
                     vars: [
                         { name: id, coef: 1.0 }
                     ],
-                    bnds: { type: glpk.GLP_DB, lb: fS.quantity, ub:fS.quantity+3 }
+                    bnds: { type: glpk.GLP_DB, lb: fS.quantity, ub:fS.quantity+duplicatesAllowed }
                 }
             );
         } else { // Global limits to one each
@@ -459,7 +335,7 @@ function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):an
                     vars: [
                         { name: id, coef: 1.0 }
                     ],
-                    bnds: { type: glpk.GLP_DB, lb: 0, ub:5 }
+                    bnds: { type: glpk.GLP_DB, lb: 0, ub:duplicatesAllowed }
                 }
             );
         }
@@ -467,70 +343,46 @@ function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):an
     return toRet;
 }
 // validFoods is all the ids of foods we're considering for eating (really just used in case we do/don't want to include tier 1 in the future, since validFoods is made in a function that excludes tier 1's)
-function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
-    // All foods must add up to macronutrients ratios and calorie limit
-        // For stuff like required and banned, we can use the api for constraints; byoutiful
+function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,use_int:boolean):any {
     // Each variable is a frequency of a food item, so there are as many as there are valid foods to choose from
         // Each equation represents one dimensions I'm constraining to: in this case let's assume it's just the three macronutrients and calories
-    let gramsfat:number = (k*(f/100))/9; // number of calories divided by 9 calories per gram of fat
-    let gramscarbohydrate:number = (k*(c/100))/4; // number of calories divided by 4 calories per gram of carbohydrate
-    let gramsprotein:number = (k*(p/100))/4; // number of calories divided by 4 calories per gram of protein
     let calories:any = 
     {
     name: 'calories',
         vars: getCalVars(board),
-        bnds: { type: glpk.GLP_DB, lb: k*0.8, ub: k } /** to account for using LPs and always rounding up */
+        // bnds: { type: glpk.GLP_DB, lb: k*0.9, ub: k*1.1 }
+        bnds: { type: glpk.GLP_UP, ub: k*0.9 } /** to account for using LPs and always rounding up */
+            // Coupled with the max amount of repeats; 0.9 as an upper k works okay with max repeats of 2, ig but everythings inconsistent
     };
-    let fat:any = 
+    if (use_int) {
+        calories["bnds"] = { type: glpk.GLP_DB, lb: k*0.9, ub: k*1.1 };
+    }
+    // (total calories from fat/f%) - (total calories from protein/p%) = 0
+    let fatProtein:any = 
     {
-    name: 'fat',
-//USED TO:    // (total calories from fat/f%) - (total calories from carb/c%) = 0
-// Due to the insane nature of the discrepancies between macrograms and calories (you get way fewer than you should), a much higher ceiling on them is reasonable
-    // However, we should also add constraints of them relative to each other
-        vars: getFatVars(f,p,true,board),
-        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
+    name: 'fatProtein',
+        vars: getFatProteinVars(f,p,board),
+        bnds: { type: glpk.GLP_DB, lb: -0.1, ub: 0.1 }
     };
-    let carbohydrates:any = 
+    // (total calories from carb/c%) - (total calories from fat/f%) = 0
+    let carbohydratesFat:any = 
     {
-    name: 'carbohydrates',
-//USED TO:    // (total calories from fat/f%) - (total calories from protein/p%) = 0
-        vars: getCarbVars(c,f,true,board),
-        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
-    };
-    let protein:any = 
-    {
-    name: 'protein',
-//USED TO:    // (total calories from protein/p%) - (total calories from carb/c%) = 0
-        vars: getProteinVars(p,c,true,board),
-        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
-    };
+    name: 'carbohydratesFat',
 
-    let fat2:any = 
-    {
-    name: 'fat2',
-        vars: getFatVars(f,p,false,board),
-        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
+    vars: getCarbFatVars(c,f,board),
+        bnds: { type: glpk.GLP_DB, lb: -0.1, ub: 0.1 }
     };
-    let carbohydrates2:any = 
+    // (total calories from protein/p%) - (total calories from carb/c%) = 0
+    let proteinCarbohydrate:any = 
     {
-    name: 'carbohydrates2',
-//USED TO:    // (total calories from fat/f%) - (total calories from protein/p%) = 0
-        vars: getCarbVars(c,p,false,board),
-        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
-    };
-    let protein2:any = 
-    {
-    name: 'protein2',
-//USED TO:    // (total calories from protein/p%) - (total calories from carb/c%) = 0
-        vars: getProteinVars(p,c,false,board),
-        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
+    name: 'proteinCarbohydrate',
+        vars: getProteinCarbVars(p,c,board),
+        bnds: { type: glpk.GLP_DB, lb: -0.1, ub: 0.1 }
     };
 
     let reqbans:any = calculateRequiredsBanneds(board,v,ve,gf); // constraints for required/banned
-    console.log("reconquista: "+reqbans.length);
-    // return (reqbans.length > 0)?[calories,fat,carbohydrates,protein,fat2,carbohydrates2,protein2].concat(reqbans):[calories,fat,carbohydrates,protein,fat2,carbohydrates2,protein2];
-    // return [calories,fat,protein,carbohydrates].concat(reqbans);
-    return [calories,fat,carbohydrates,protein].concat(reqbans); // the key was to use the tyechniques I leanred; give the ratio breathing room (+- 0.1), try both giving and not giving extra information (symmetric eq), realuze that my problem is so simple relative to others' that glpk can prbably do it (why I had the confidence to search for the rror code that allowed me to realize the reason why protein and protein2 weren't enough were due to the lack of an overall calorie constraint; sometimes information is useful, sometimes it's bad. it needs breathing room to solve, but not infinite breathing room)
+    // I could use the proteinCarbohydrate, but by the transitive property it's taken care of AS LONG AS BOUNDS ARE OKAY ON THE OTHER TWO
+    return [calories,fatProtein,carbohydratesFat/*,proteinCarbohydrate*/].concat(reqbans); // the key was to use the techniques I learned; give the ratio breathing room (+- 0.1), try both giving and not giving extra information (symmetric eq), realuze that my problem is so simple relative to others' that glpk can prbably do it (why I had the confidence to search for the rror code that allowed me to realize the reason why protein and protein2 weren't enough were due to the lack of an overall calorie constraint; sometimes information is useful, sometimes it's bad. it needs breathing room to solve, but not infinite breathing room)
 }
 function createIntegers(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):string[] {
     let toRet:string[] = [];
@@ -543,7 +395,7 @@ function createIntegers(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:num
     }
     return toRet;
 }
-// For future refactor: just make the inputs these items from the Options interface (see method internal) 
+// TODO For future refactor: just make the inputs these items from the Options interface (see method internal) 
 function createOptions(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
     // interface Options {
     //     mipgap?: number,    /* set relative mip gap tolerance to mipgap, default 0.0 */
@@ -565,53 +417,56 @@ function createOptions(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:numb
     };
 }
 // TODO Get rid of default values once no longer applicable
-function solutionToSquares(solution:any,board:any):Food[] {
-    console.log("CEE EHL GEE");
-    // console.log(Object.entries(solution.result.vars));
+function solutionToFoods(solution:any,board:any):any {
+    console.log("GENERATED MEAL: ");
+    let toRet:any = [];
     let foods:any = Object.entries(solution.result.vars);
     let k:number = 0;
     let f:number = 0;
     let c:number = 0;
     let p:number = 0;
+
+    let k1:number = 0;
+    let f1:number = 0;
+    let c1:number = 0;
+    let p1:number = 0;
     for (let i = 0; i < foods.length; i++) {
         let cur:any = board[foods[i][0]].food;
         if (foods[i][1] > 0) {
             console.log(cur["id"]+": "+cur["label"]+" x "+foods[i][1]);
+            toRet.push( {
+                food: cur,
+                quantity: foods[i][1]
+            } );
         }
         let quantity:number = Math.ceil(foods[i][1]);
         k += quantity*(parseInt(cur["nutrition_details"]["calories"]["value"])?parseInt(cur["nutrition_details"]["calories"]["value"]):(9*10)+(4*10)+(4*10));
         f += quantity*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10);
         c += quantity*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
         p += quantity*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
-        // console.log("Name: "+cur["label"]);
-        // console.log(`calories: ${Object.entries(cur["nutrition_details"]["calories"])}`);
-        // console.log(`fat: ${Object.entries(cur["nutrition_details"]["fatContent"])}`);
-        // console.log(`carbs: ${Object.entries(cur["nutrition_details"]["carbohydrateContent"])}`);
-        // console.log(`protein: ${Object.entries(cur["nutrition_details"]["proteinContent"])}`);
+
+        k1 += foods[i][1]*(parseInt(cur["nutrition_details"]["calories"]["value"])?parseInt(cur["nutrition_details"]["calories"]["value"]):(9*10)+(4*10)+(4*10));
+        f1 += foods[i][1]*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10);
+        c1 += foods[i][1]*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
+        p1 += foods[i][1]*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
     }
-    console.log("Caloria: "+k);
+    console.log("Calories (Actual): "+k);
     console.log(`f: ${f}, c: ${c}, p: ${p}`);
-    return [];
+    console.log("Calories (Predicted): "+k1);
+    console.log(`f: ${f1}, c: ${c1}, p: ${p1}`);
+    return toRet;
 }
-// k is kilocals
-async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):Promise<Food[]> {
-    // Pretty basic
-        // Overall plan: 
-            // Some way to avoid stigler issues, don't want sucky meals
-        // Objective (could be any of the following)
-            // See createObjective
-        // Constraints
-            // See createConstraints
-    // Next goal: Programmatically fill all these features with different functions
-        // Could end up in a similar situation to the backend, where I see repeated work and then refactor into something more efficient
-    let validFoods:string[] = createIntegers(board,v,ve,gf,k,f,c,p);
-    const lp = {
+async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,use_int:boolean):Promise<any> {
+    let lp:any = {
         name: 'Meal Generation',
         objective: createObjective(board,v,ve,gf,k,f,c,p),
-        subjectTo: createConstraints(board,v,ve,gf,k,f,c,p),
+        subjectTo: createConstraints(board,v,ve,gf,k,f,c,p,use_int),
           /* integer */
-        generals : validFoods
     };
+    if (use_int) {
+        let validFoods:string[] = createIntegers(board,v,ve,gf,k,f,c,p);
+        lp.generals = validFoods; // Don't need to do integers, np-hard and doesn't work with the constraints
+    }
 
     let filepath = "files/";
     let filename = "meal_mip";
@@ -628,12 +483,8 @@ async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f
     });
 
     const opt = createOptions(board,v,ve,gf,k,f,c,p);
-
-    // console.log(
-    // await (glpk.solve(lp, opt)
-    // .then((res: any) => console.log(res))
-    // .catch((err: any) => console.log(err))));
-    return solutionToSquares(glpk.solve(lp, opt),board); /* Converts the solution into the food square object */
+    let solution = await glpk.solve(lp, opt);
+    return solutionToFoods(solution,board); /* Converts the solution into the food square object */
 }
 async function bonSiteUp():Promise<string> {
     // puppeteering
@@ -754,8 +605,8 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
     // toRet["menus"] = {}; //so we don't include in the written json
     let menus:any = {};
     let meals:string[] = ["breakfast", "lunch", "dinner"];
-    // Bon site
-    let days:number[] = [0,5,6];
+    // Bon site TODO Update when doing future testing
+    let days:number[] = [0,8,9];
     for (let i:number = 0; i <= 2; i++) {
          // Added so we get the days relative to the given day; we want multiple days data corresponding to a single day
          // https://stackoverflow.com/questions/39269701/typescript-trying-the-addition-of-two-variables-but-get-the-concatenation-of-t
@@ -883,14 +734,15 @@ router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cr
     let fratio:number = parseInt(req.params.fratio)?parseInt(req.params.fratio):25;
     let cratio:number = parseInt(req.params.cratio)?parseInt(req.params.cratio):55;
     let pratio:number = parseInt(req.params.pratio)?parseInt(req.params.pratio):20;
-    let meal:Food[] = await generateMeal(board,
+    let meal:any = await generateMeal(board,
         vegetarian==="true",
         vegan==="true",
         glutenfree==="true",
         calories,
         fratio,
         cratio,
-        pratio); // returns an array of the foods
+        pratio,
+        false); // returns an array of the foods
 
     res.send(meal);
 });

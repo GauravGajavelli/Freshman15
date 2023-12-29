@@ -11,12 +11,6 @@
     // 1. add it to the model first (prolly uses backend connectivity)
     // 2. then add to the view (since you need to interface with the model)
 
-/** jquery */
-// var script = document.createElement('script');
-// script.src = 'https://code.jquery.com/jquery-3.6.3.min.js'; // Check https://jquery.com/ for the current version
-// document.getElementsByTagName('head')[0].appendChild(script);
-// console.log(script);
-
 /** namespace. */
 var gung = gung || {};
 

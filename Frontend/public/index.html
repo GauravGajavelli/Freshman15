@@ -26,8 +26,8 @@
             <select id="date-select">
               <!-- NOTE: HAD NAME IN ADDITION TO VALUE -->
               <option value="0">Today</option>
-              <option value="5">Tomorrow</option>
-              <option value="6">Yesterday</option>
+              <option value="8">Tomorrow</option>
+              <option value="9">Yesterday</option>
             </select>
           </div>
           <div class = "flex-container3 flex-item2" id="meal">
@@ -70,7 +70,8 @@
                 <span class="flex-item3">Protein %: </span>
               </div>
               <div class = flex-container2>
-                <input type="number" min="0" max="10000" value="750" id="calories">
+                <!-- These limits abide by a certain principle of user design: what they can't see won't hurt 'em -->
+                <input type="number" min="500" max="1500" value="750" id="calories">
                 <input type="number" min="0" max="100" value="25" id="fat">
                 <input type="number" min="0" max="100" value="55" id="carbohydrate">
                 <input type="number" min="0" max="100" value="20" id="protein">
