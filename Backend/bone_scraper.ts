@@ -282,7 +282,7 @@ function getCalVars(board:any):any {
 //
 // constraint one: f must be prop to c
 // (total calories from fat/f%)
-function getFatVars(f:number,positive:boolean,board:any):any { // assumes all values in foods are in grams
+function getFatVars(f:number,p:number,positive:boolean,board:any):any { // assumes all values in foods are in grams
     // vars: [
     //     { name: 'x1', coef: 0.6 },
     //     { name: 'x2', coef: 0.5 }
@@ -308,7 +308,13 @@ function getFatVars(f:number,positive:boolean,board:any):any { // assumes all va
             if (!cal) {
                 cal = 10;
             }
-            toRet.push({ name: id, coef: (positive?1:-1)*(cal*9)/*/(f/100)*/});
+            // TEST MULTIPLYING BY f and p
+            
+            let col = parseInt(fS.food["nutrition_details"]["proteinContent"]["value"]);
+            if (!col) {
+                col = 10;
+            }
+            toRet.push({ name: id, coef: ((positive?1:-1)*(cal*9)/(f/100))+((positive?-1:1)*(col*4)/(p/100))/*/(f/100)*/});
         }
     }
     return toRet;
@@ -317,7 +323,7 @@ function getFatVars(f:number,positive:boolean,board:any):any { // assumes all va
 // 
 // constraint two: f must be prop to p
 // (total calories from carb/c%) = 0
-function getCarbVars(c:number,positive:boolean,board:any):any { // assumes all values in foods are in grams
+function getCarbVars(c:number,f:number,positive:boolean,board:any):any { // assumes all values in foods are in grams
     // vars: [
     //     { name: 'x1', coef: 0.6 },
     //     { name: 'x2', coef: 0.5 }
@@ -343,7 +349,12 @@ function getCarbVars(c:number,positive:boolean,board:any):any { // assumes all v
             if (!cal) {
                 cal = 10;
             }
-            toRet.push({ name: id, coef: (positive?1:-1)*(cal*4)/*/(c/100)*/});
+            
+            let col = parseInt(fS.food["nutrition_details"]["fatContent"]["value"]);
+            if (!col) {
+                col = 10;
+            }
+            toRet.push({ name: id, coef: ((positive?1:-1)*(cal*4)/(c/100))+((positive?-1:1)*(col*9)/(f/100))/*/(c/100)*/});
         }
     }
     return toRet;
@@ -352,7 +363,7 @@ function getCarbVars(c:number,positive:boolean,board:any):any { // assumes all v
 // 
 // constraint three: p must be prop to c
 // (total calories from protein/p%)
-function getProteinVars(p:number,positive:boolean,board:any):any { // assumes all values in foods are in grams
+function getProteinVars(p:number,c:number,positive:boolean,board:any):any { // assumes all values in foods are in grams
     // vars: [
     //     { name: 'x1', coef: 0.6 },
     //     { name: 'x2', coef: 0.5 }
@@ -378,7 +389,12 @@ function getProteinVars(p:number,positive:boolean,board:any):any { // assumes al
             if (!cal) {
                 cal = 10;
             }
-            toRet.push({ name: id, coef: (positive?1:-1)*(cal*4)/*/(p/100)*/});
+            
+            let col = parseInt(fS.food["nutrition_details"]["carbohydrateContent"]["value"]);
+            if (!col) {
+                col = 10;
+            }
+            toRet.push({ name: id, coef: ((positive?1:-1)*(cal*4)/(p/100)/*/(p/100)*/)+((positive?-1:1)*(col*4)/(c/100))});
         }
     }
     return toRet;
@@ -443,7 +459,7 @@ function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):an
                     vars: [
                         { name: id, coef: 1.0 }
                     ],
-                    bnds: { type: glpk.GLP_DB, lb: 0, ub:1 }
+                    bnds: { type: glpk.GLP_DB, lb: 0, ub:5 }
                 }
             );
         }
@@ -463,7 +479,7 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
     {
     name: 'calories',
         vars: getCalVars(board),
-        bnds: { type: glpk.GLP_DB, lb: k*0.9, ub: k*1.1 }
+        bnds: { type: glpk.GLP_DB, lb: k*0.8, ub: k } /** to account for using LPs and always rounding up */
     };
     let fat:any = 
     {
@@ -471,27 +487,50 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
 //USED TO:    // (total calories from fat/f%) - (total calories from carb/c%) = 0
 // Due to the insane nature of the discrepancies between macrograms and calories (you get way fewer than you should), a much higher ceiling on them is reasonable
     // However, we should also add constraints of them relative to each other
-        vars: getFatVars(f,true,board),
-        bnds: { type: glpk.GLP_DB, lb: k*(f/100), ub: k*(f/100)*1.9 }
+        vars: getFatVars(f,p,true,board),
+        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
     };
     let carbohydrates:any = 
     {
     name: 'carbohydrates',
 //USED TO:    // (total calories from fat/f%) - (total calories from protein/p%) = 0
-        vars: getCarbVars(c,true,board),
-        bnds: { type: glpk.GLP_DB, lb: k*(c/100), ub: k*(c/100)*1.9 },
+        vars: getCarbVars(c,f,true,board),
+        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
     };
     let protein:any = 
     {
     name: 'protein',
 //USED TO:    // (total calories from protein/p%) - (total calories from carb/c%) = 0
-        vars: getProteinVars(p,true,board),
-        bnds: { type: glpk.GLP_DB, lb: k*(p/100), ub: k*(p/100)*1.9 }
+        vars: getProteinVars(p,c,true,board),
+        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
     };
+
+    let fat2:any = 
+    {
+    name: 'fat2',
+        vars: getFatVars(f,p,false,board),
+        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
+    };
+    let carbohydrates2:any = 
+    {
+    name: 'carbohydrates2',
+//USED TO:    // (total calories from fat/f%) - (total calories from protein/p%) = 0
+        vars: getCarbVars(c,p,false,board),
+        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
+    };
+    let protein2:any = 
+    {
+    name: 'protein2',
+//USED TO:    // (total calories from protein/p%) - (total calories from carb/c%) = 0
+        vars: getProteinVars(p,c,false,board),
+        bnds: { type: glpk.GLP_DB, lb: -0.2, ub: 0.2 }
+    };
+
     let reqbans:any = calculateRequiredsBanneds(board,v,ve,gf); // constraints for required/banned
     console.log("reconquista: "+reqbans.length);
-    return (reqbans.length > 0)?[calories,fat,carbohydrates,protein].concat(reqbans):[calories,fat,carbohydrates,protein];
+    // return (reqbans.length > 0)?[calories,fat,carbohydrates,protein,fat2,carbohydrates2,protein2].concat(reqbans):[calories,fat,carbohydrates,protein,fat2,carbohydrates2,protein2];
     // return [calories,fat,protein,carbohydrates].concat(reqbans);
+    return [calories,fat,carbohydrates,protein].concat(reqbans); // the key was to use the tyechniques I leanred; give the ratio breathing room (+- 0.1), try both giving and not giving extra information (symmetric eq), realuze that my problem is so simple relative to others' that glpk can prbably do it (why I had the confidence to search for the rror code that allowed me to realize the reason why protein and protein2 weren't enough were due to the lack of an overall calorie constraint; sometimes information is useful, sometimes it's bad. it needs breathing room to solve, but not infinite breathing room)
 }
 function createIntegers(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):string[] {
     let toRet:string[] = [];
@@ -539,10 +578,11 @@ function solutionToSquares(solution:any,board:any):Food[] {
         if (foods[i][1] > 0) {
             console.log(cur["id"]+": "+cur["label"]+" x "+foods[i][1]);
         }
-        k += foods[i][1]*(parseInt(cur["nutrition_details"]["calories"]["value"])?parseInt(cur["nutrition_details"]["calories"]["value"]):(9*10)+(4*10)+(4*10));
-        f += foods[i][1]*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10);
-        c += foods[i][1]*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
-        p += foods[i][1]*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
+        let quantity:number = Math.ceil(foods[i][1]);
+        k += quantity*(parseInt(cur["nutrition_details"]["calories"]["value"])?parseInt(cur["nutrition_details"]["calories"]["value"]):(9*10)+(4*10)+(4*10));
+        f += quantity*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10);
+        c += quantity*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
+        p += quantity*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
         // console.log("Name: "+cur["label"]);
         // console.log(`calories: ${Object.entries(cur["nutrition_details"]["calories"])}`);
         // console.log(`fat: ${Object.entries(cur["nutrition_details"]["fatContent"])}`);
