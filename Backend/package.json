@@ -17,6 +17,7 @@
     "glpk.js": "^4.0.2",
     "javascript-lp-solver": "^0.4.24",
     "luxon": "^3.4.4",
+    "openai": "^4.24.1",
     "puppeteer": "^21.6.1"
   }
 }

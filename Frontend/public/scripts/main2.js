@@ -174,6 +174,7 @@ gung.FoodController = class {
         const banHeader = gung.htmlToElement(`<h3>Banned Foods</h3>`);
 		oldReqs.append(reqHeader);
         oldBans.append(banHeader);
+        clearPlan();
     }
     clearPlan() {
         const oldPlan = document.querySelector(`#plan`);
@@ -288,8 +289,8 @@ gung.FoodController = class {
             </div>
             `);
         } else { // neither banned nor required: a final meal item
-            let perServing = parseFloat(fs.food["nutrition_details"]?fs.food["nutrition_details"]["servingSize"]["value"]:"1");
-            let units = fs.food["nutrition_details"]?fs.food["nutrition_details"]["servingSize"]["unit"]:"units";
+            let perServing = parseFloat(!fs.food.nutritionless?fs.food["nutrition_details"]["servingSize"]["value"]:"1");
+            let units = !fs.food.nutritionless?fs.food["nutrition_details"]["servingSize"]["unit"]:"units";
             console.log(Object.entries(fs));
             return gung.htmlToElement(`
             <div id="f${fs.food["id"]}" class="flex-container5">

@@ -1,12 +1,23 @@
 // TODO
-    // - Lel maybe I can just literally seed the alg for new random results every time (like giving certain foods a normally distributed weight value centered at 10 [or whatever the means of the current fat, carb, and protein sums in grams are] and distributed the same way)
-        // Another seed to try first: - As I added on a second and third macronutrient to the constraint equations, it became clear that I needed to widen the lower and upper bounds (from working at 0.9 and 1.1 at first to 0.5 and 1.5 to 0.1 and 1.9, potentially pushing to 0 and >2.0 in the future idk)
-        // - Figure out the mean and sd of current and previously valid seeds to reverse engineer (so all macro 'vars' arrays individually, pairwise, and all three)
-    // - Make it run like 10x tries for a good result (measured by the matches system of previous email or something like a MAE or MSE threshold over all macronutrient percentages) - I could array all the solutions and do an in place sort with a comparator like a head, like so: https://stackoverflow.com/questions/17420773/how-to-make-a-efficient-comparator-for-javascript-sort-function-for-sorting-an-a
-        // - Previous email: A way to mitigate this disobedient nature is to categorize solutions into 3*2 = six possibilities for what macronutrient is highest and what's the lowest and try the various methods repeatedly until we get as close a match (rank the results by similarity to the desired quantity in three tiers: 2 being both highest and lowest macro match what the highest/lowest were in the request, 1 being either matches, and 0 being neither do) - Then just return that lel
-        // Do this from inside meal gen function, then call the sort on solutions that made it through, and send the best one back if possible
     // Implement dietary preference filtering (vegetarian means we only show vegetarian foods, etc.)
+    // Implement GPT-based artificial data
+    // Refactor to use the 'nutritionless' field of Food instead of manually checking
+        // This could probably be used in the front end too, like in the list generator
+    // See SDLC for more TODOs
+    // See if there is any other data as simple as tier to maximize by
+        // It has to be a quantity each food has; it doesn't look like there's another, at least that I've gotten from the json
+            // I could try hybridizing Tier Zero with something else
     // ctrl+f todo
+    // These are largely resolved, I'd say Tier Zero maximizer plus hybrid LP/MIP has pretty much shored up any issues with the meal generator
+        // I could add some modes for requiring vegetables as constraints
+            // I should also add some parametrization for inputting leniency values on the double bounds if that ever ends up useful
+        // Tier Zero for appeal, LP for accuracy, and MIP as a safety net
+        // - Lel maybe I can just literally seed the alg for new random results every time (like giving certain foods a normally distributed weight value centered at 10 [or whatever the means of the current fat, carb, and protein sums in grams are] and distributed the same way)
+            // Another seed to try first: - As I added on a second and third macronutrient to the constraint equations, it became clear that I needed to widen the lower and upper bounds (from working at 0.9 and 1.1 at first to 0.5 and 1.5 to 0.1 and 1.9, potentially pushing to 0 and >2.0 in the future idk)
+            // - Figure out the mean and sd of current and previously valid seeds to reverse engineer (so all macro 'vars' arrays individually, pairwise, and all three)
+        // - Make it run like 10x tries for a good result (measured by the matches system of previous email or something like a MAE or MSE threshold over all macronutrient percentages) - I could array all the solutions and do an in place sort with a comparator like a head, like so: https://stackoverflow.com/questions/17420773/how-to-make-a-efficient-comparator-for-javascript-sort-function-for-sorting-an-a
+            // - Previous email: A way to mitigate this disobedient nature is to categorize solutions into 3*2 = six possibilities for what macronutrient is highest and what's the lowest and try the various methods repeatedly until we get as close a match (rank the results by similarity to the desired quantity in three tiers: 2 being both highest and lowest macro match what the highest/lowest were in the request, 1 being either matches, and 0 being neither do) - Then just return that lel
+            // Do this from inside meal gen function, then call the sort on solutions that made it through, and send the best one back if possible
 
 console.log("Hello Bon");
 
@@ -227,17 +238,20 @@ function research(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:
     }
     return toRet;*/
  
-    // new new research: maximizing tier 0, the main courses
+    // new new research: maximizing tier 0, the main courses; if this ends up not being nuanced enough once we get all of the rest of the data, do weights with higher ones for tier 0 and lower for tiers 2 and 1
     let toRet:any = [];
     for (const id in board) {
         const fS = board[id]; // foodSquare
         if (fS.food["tier"] == 0) {
             toRet.push({ name: id, coef: 1.0});
         }
+        if (fS.food["tier"] == 2) {
+            toRet.push({ name: id, coef: -10});
+        }
     }
     return toRet;
 }
-// TODO add better objectives
+// TODO add better objectives; it seems you figure them out when you have a bad one and are repeatedly annoyed, forcing you to reevaluate your objective
 function createObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
     // Objective (could be any of the following)
         // Simple
@@ -256,9 +270,9 @@ function createObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:nu
         // Since our normalized price is free, I'd say our objective would simply be to maximize z = 0*f1+0*f2+0*f3+... = 0
             // f1, f2, ... denote the food names, but I'll just use food ids or names to keep it simpler
 
-        let objective:any = research(board,v,ve,gf,k,f,c,p); // works, maximizes cals
-        // objective = getCalVars(board);
-        // objective = research(board,v,ve,gf,k,f,c,p); // works, just gives normally distributed random numbers in the ballpark of the sum of macronutrients
+        let objective:any = research(board,v,ve,gf,k,f,c,p); // works, maximizes specials
+        // objective = getCalVars(board); works
+        // objective = research(board,v,ve,gf,k,f,c,p); // works, used to just give normally distributed random numbers in the ballpark of the sum of macronutrients
         return {
         direction: glpk.GLP_MAX,
         name: 'Tier Zero Maximizer',
@@ -343,6 +357,8 @@ function getProteinCarbVars(p:number,c:number,board:any):any { // assumes all va
     }
     return toRet;
 }
+// Returns array of variables for the constraint: 
+// total calories from fat
 function getFatVars(board:any):any { // assumes all values in foods are in grams
     let toRet:any = [];
     for (const id in board) {
@@ -357,6 +373,8 @@ function getFatVars(board:any):any { // assumes all values in foods are in grams
     }
     return toRet;
 }
+// Returns array of variables for the constraint: 
+// total calories from carbohydrate
 function getCarbVars(board:any):any { // assumes all values in foods are in grams
     let toRet:any = [];
     for (const id in board) {
@@ -371,6 +389,8 @@ function getCarbVars(board:any):any { // assumes all values in foods are in gram
     }
     return toRet;
 }
+// Returns array of variables for the constraint: 
+// total calories from protein
 function getProteinVars(board:any):any { // assumes all values in foods are in grams
     let toRet:any = [];
     for (const id in board) {
@@ -436,7 +456,7 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
     name: 'calories',
         vars: getCalVars(board),
         // Ranges predicated on meal caloric range being 500 to 1500
-        bnds: { type: glpk.GLP_UP, ub: k<=1000?k*0.9:k*0.7 } /** to account for using LPs and always rounding up */
+        bnds: { type: glpk.GLP_DB, lb: k<=1000?k*0.7:k*0.5, ub: k<=1000?k*0.9:k*0.7 } /** to account for using LPs and always rounding up */
             // Coupled with the max amount of repeats; 0.9 as an upper k works okay with max repeats of 2, ig but everythings inconsistent
     };
     if (use_int) {
