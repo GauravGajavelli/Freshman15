@@ -12,7 +12,7 @@ app.use(express.urlencoded({limit: '200mb', extended: true}));
 var bon = require('./bone_scraper.ts');
 app.use('/',bon);
 
-var openai = require('./openai-test.ts');
+// var openai = require('./openai-test.ts');
 // app.use('/kule/',openai);
 
 app.listen(3000);

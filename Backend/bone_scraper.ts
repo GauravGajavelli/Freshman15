@@ -422,8 +422,6 @@ function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):an
                 }
             );
         } else if (fS.required) { // we need at least the required amount for this food variable
-            console.log("MY DAD: "+id);
-            console.log("My dad quantities: "+fS.food["nutrition_details"]);
             toRet.push(
                 {
                     name: fS.food["label"],
@@ -448,7 +446,8 @@ function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):an
     return toRet;
 }
 // validFoods is all the ids of foods we're considering for eating (really just used in case we do/don't want to include tier 1 in the future, since validFoods is made in a function that excludes tier 1's)
-function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,use_int:boolean):any {
+// lenience:number; how far the ratios can stray, must be 0 < lenience < 1
+function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,lenience:number,use_int:boolean):any {
     // Each variable is a frequency of a food item, so there are as many as there are valid foods to choose from
         // Each equation represents one dimensions I'm constraining to: in this case let's assume it's just the three macronutrients and calories
     let calories:any = 
@@ -460,13 +459,16 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
             // Coupled with the max amount of repeats; 0.9 as an upper k works okay with max repeats of 2, ig but everythings inconsistent
     };
     if (use_int) {
-        calories["bnds"] = { type: glpk.GLP_DB, lb: k*0.9, ub: k*1.1 };
+        // calories["bnds"] = { type: glpk.GLP_DB, lb: k*0.9, ub: k*1.1 };
+        console.log("Saiki Gingko");
+        console.log("lower b: "+(k<=1000?k*0.7:k*0.5));
+        console.log("upper b: "+(k<=1000?k*0.9:k*0.7));
+        calories["bnds"] = { type: glpk.GLP_DB, lb: k<=1000?k*0.7:k*0.5, ub: k<=1000?k*0.9:k*0.7 } /** to account for using LPs and always rounding up */
     }
     let constraints:any = [];
     let reqbans:any = calculateRequiredsBanneds(board,v,ve,gf); // constraints for required/banned
     if (!use_int) {
         // (total calories from fat/f%) - (total calories from protein/p%) = 0
-        let lenience:number = 0.1; // how far the ratios can stray, must be positive
         let fatProtein:any = 
         {
         name: 'fatProtein',
@@ -477,9 +479,8 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
         let carbohydratesFat:any = 
         {
         name: 'carbohydratesFat',
-
-        vars: getCarbFatVars(c,f,board),
-        bnds: { type: glpk.GLP_DB, lb: -1*lenience, ub: lenience }
+            vars: getCarbFatVars(c,f,board),
+            bnds: { type: glpk.GLP_DB, lb: -1*lenience, ub: lenience }
         };
         // (total calories from protein/p%) - (total calories from carb/c%) = 0
         let proteinCarbohydrate:any = 
@@ -490,19 +491,19 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
         };
         constraints = [calories,fatProtein,carbohydratesFat/*,proteinCarbohydrate*/].concat(reqbans);
     } else {
-        let calories:any = 
-        {
-        name: 'calories',
-            vars: getCalVars(board),
-            bnds: { type: glpk.GLP_DB, lb: k*0.9, ub: k*1.1 }
-        };
+        // let calories:any = 
+        // {
+        // name: 'calories',
+        //     vars: getCalVars(board),
+        //     bnds: { type: glpk.GLP_DB, lb: k*0.9, ub: k*1.1 }
+        // };
         let fat:any = 
         {
         name: 'fat',
     // Due to the insane nature of the discrepancies between macrograms and calories (you get way fewer than you should), a much higher ceiling on them is reasonable
-        // However, we should also add constraints of them relative to each other
+        // However, we should also add jank 'constraints' of them relative to each other by limiting their sizes
             vars: getFatVars(board),
-            bnds: { type: glpk.GLP_LO, lb: k*(f/100)}
+            bnds: { type: glpk.GLP_UP, ub: k*(f/100)*(1+lenience)}
         };
         let carbohydrates:any = 
         {
@@ -558,6 +559,8 @@ function solutionToFoods(solution:any,board:any):FoodSquare[] {
     console.log("GENERATED MEAL: ");
     let toRet:any = [];
     let foods:any = Object.entries(solution.result.vars);
+    console.log("Solution worked?"+((solution.result.status==glpk.GLP_FEAS)||(solution.result.status==glpk.GLP_OPT)||(solution.result.status==glpk.GLP_UNBND)));
+    console.log("Solution didn't worked?"+((solution.result.status==glpk.GLP_UNDEF)||(solution.result.status==glpk.GLP_INFEAS)||(solution.result.status==glpk.GLP_NOFEAS)||(solution.result.status==glpk.GLP_UNBND)));
     let k:number = 0;
     let f:number = 0;
     let c:number = 0;
@@ -596,11 +599,13 @@ function solutionToFoods(solution:any,board:any):FoodSquare[] {
     console.log(`f: ${f}, c: ${c}, p: ${p}`);
     return toRet;
 }
-async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,use_int:boolean):Promise<FoodSquare[]> {
+// Leniency is the degree to which we're willing to fudge constraints
+    // Only one to keep things simple and bounds symmetric
+async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,leniency:number,use_int:boolean):Promise<FoodSquare[]> {
     let lp:any = {
         name: 'Meal Generation',
         objective: createObjective(board,v,ve,gf,k,f,c,p),
-        subjectTo: createConstraints(board,v,ve,gf,k,f,c,p,use_int),
+        subjectTo: createConstraints(board,v,ve,gf,k,f,c,p,leniency,use_int),
           /* integer */
     };
     if (use_int) {
@@ -614,13 +619,13 @@ async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f
     if (!dir_exists) { // If the directory already exists
         await fs.promises.mkdir(filepath,{ recursive: true });
     }
-    fs.writeFile(filepath+filename+".json", JSON.stringify(lp), function(err:any, buf:any ) {
-        if(err) {
-            console.log("error: ", err);
-        } else {
-            console.log("Meal Mip saved successfully!");
-        }
-    });
+    // fs.writeFile(filepath+filename+".json", JSON.stringify(lp), function(err:any, buf:any ) {
+    //     if(err) {
+    //         console.log("error: ", err);
+    //     } else {
+    //         console.log("Meal Mip saved successfully!");
+    //     }
+    // });
 
     const opt = createOptions(board,v,ve,gf,k,f,c,p);
     let solution = await glpk.solve(lp, opt);
@@ -896,8 +901,10 @@ router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cr
         fratio,
         cratio,
         pratio,
+        0.1, // +-lenience in macro ratios
         false); // returns an array of the foods
-    if (meal.length == 0) {
+    for (let leniency = 0.1; leniency <= 1.5 && meal.length == 0; leniency += 0.1) {
+        console.log("Cur Lenience: "+leniency);
         meal = await generateMeal(board,
             vegetarian==="true",
             vegan==="true",
@@ -906,6 +913,7 @@ router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cr
             fratio,
             cratio,
             pratio,
+            leniency,
             true);
     }
     // TODO Implement algorithm for trying multiple methods before quitting
