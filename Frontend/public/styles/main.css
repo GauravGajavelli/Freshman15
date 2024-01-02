@@ -93,7 +93,10 @@
     margin-left: 5px;
 }
 #lists .flex-container3 {
-    /* width: 30vw; */
+    width: 20vw;
+}
+#lists .flex-container10 {
+    width: 30vw;
 }
 #bottomRow {
     justify-content: left;

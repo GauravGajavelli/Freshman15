@@ -228,39 +228,57 @@ gung.FoodController = class {
 		// oldList.parentElement.appendChild(newList);
     }
     updateChart(plannedMeal) {
-        let normalizedFat = 0;
-        let normalizedProtein = 0;
-        let normalizedCarbohydrate = 0;
-        for (const fs in plannedMeal) {
-            normalizedFat += fs.food["nutrition_details"][]
-            normalizedProtein
-            normalizedCarbohydrate
+        let f = 0;
+        let c = 0;
+        let p = 0;
+        for (let i = 0; i < plannedMeal.length; i++) {
+            const cur = plannedMeal[i].food;
+            const qty = plannedMeal[i].quantity;
+            f += qty*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10)*9;
+            c += qty*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10)*4;
+            p += qty*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10)*4;
         }
-        const ctx = document.getElementById('myChart');
+        let totalCals = f+c+p;
+        let normalizedFatCals = totalCals? (f*100)/totalCals:0;
+        let normalizedCarbohydrateCals = totalCals?(c*100)/totalCals:0;
+        let normalizedProteinCals = totalCals? (p*100)/totalCals:0;
+
+        console.log("f: "+normalizedFatCals);
+        console.log("c: "+normalizedCarbohydrateCals);
+        console.log("p: "+normalizedProteinCals);
+        
+        const ctx = document.getElementById('ratios');
         const xValues = ["Fat", "Protein", "Carbohydrates"];
-        const yValues = [normalizedFat, normalizedProtein, normalizedCarbohydrate];
+        const yValues = [normalizedFatCals, normalizedProteinCals, normalizedCarbohydrateCals];
         const barColors = [
-        "#ffe101",
-        "#f95811",
-        "#00ff00"
+            "#ffe101",
+            "#f95811",
+            "#00ff00"
         ];
-    
-    new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels: xValues,
-        datasets: [{
-          backgroundColor: barColors,
-          data: yValues
-        }]
-      },
-      options: {
-        title: {
-          display: true,
-          text: "Meal Nutrition"
-        }
-      }
-    });
+        this.chart = new Chart(ctx, {
+            type: "pie",
+            data: {
+                labels: xValues,
+                datasets: [{
+                    backgroundColor: barColors,
+                    data: yValues
+                }]
+            },
+            options: {
+                // title: {
+                //     display: true,
+                //     text: "Macronutrient Ratios"
+                // }
+                // Boolean - whether or not the chart should be responsive and resize when the browser does.
+
+responsive: true,
+
+// Boolean - whether to maintain the starting aspect ratio or not when responsive, if set to false, will take up entire container
+
+maintainAspectRatio: false,
+
+            }
+        });
     }
     setPlan(plannedMeal) {
         // plannedMeal is an array of FoodSquares representing meal items
