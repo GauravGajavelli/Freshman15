@@ -21,12 +21,14 @@
 
 console.log("Hello Bon");
 
+import OpenAI from "openai";
 var express = require('express');
 var router = express.Router();
 const fs = require("fs");
 const { DateTime } = require("luxon");
 const GLPK = require('glpk.js');
 const glpk = GLPK();
+const openai = new OpenAI();
 
 var puppeteer = require('puppeteer');
 
@@ -65,28 +67,7 @@ type Food = {
     },
     "station_id": number,
     "station": string,
-    "nutrition_details": {
-        "calories": {
-        "value": number,
-        "unit": string
-        },
-        "servingSize": {
-        "value": number,
-        "unit": string
-        },
-        "fatContent": {
-        "value": number,
-        "unit": string
-        },
-        "carbohydrateContent": {
-        "value": number,
-        "unit": string
-        },
-        "proteinContent": {
-        "value": number,
-        "unit": string
-        }
-    },
+    "nutrition_details": nutritionDetails,
     "ingredients": string[],
     "sub_station_id": number,
     "sub_station": string,
@@ -99,8 +80,52 @@ type FoodSquare = {
     banned:boolean,
     quantity:number
 }
+type nutritionDetails = {
+    "calories": {
+    "value": number,
+    "unit": string
+    },
+    "servingSize": {
+    "value": number,
+    "unit": string
+    },
+    "fatContent": {
+    "value": number,
+    "unit": string
+    },
+    "carbohydrateContent": {
+    "value": number,
+    "unit": string
+    },
+    "proteinContent": {
+    "value": number,
+    "unit": string
+    }
+}
 // Returns specific sections of courses
 function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:meals,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean):Food {
+    const nDetails: nutritionDetails = {
+        calories: {
+        value: calories,
+        unit: "string"
+        },
+        servingSize: {
+        value: servingSize,
+        unit: servingUnits
+        },
+        fatContent: {
+        value: phat,
+        unit: "string"
+        },
+        carbohydrateContent: {
+        value: carbs,
+        unit: "string"
+        },
+        proteinContent: {
+        value: rote,
+        unit: "string"
+        }
+    };
     const toRet: Food = {
         id: id,
         label: name,
@@ -116,34 +141,13 @@ function food_factory (id: number, name: string, calories:number, carbs: number,
         },
         station_id: 1010101,
         station: "string",
-        nutrition_details: {
-            calories: {
-            value: calories,
-            unit: "string"
-            },
-            servingSize: {
-            value: servingSize,
-            unit: servingUnits
-            },
-            fatContent: {
-            value: phat,
-            unit: "string"
-            },
-            carbohydrateContent: {
-            value: carbs,
-            unit: "string"
-            },
-            proteinContent: {
-            value: rote,
-            unit: "string"
-            }
-        },
+        nutrition_details: nDetails,
         ingredients: ["string[]"],
         sub_station_id: 1010101,
         sub_station: "string",
         sub_station_order: 1010101,
         monotony: {}
-    }
+    };
     return toRet;
 }
 // Valid numbers of days ago: -1 < n <= whatever
@@ -599,6 +603,41 @@ function solutionToFoods(solution:any,board:any):FoodSquare[] {
     console.log(`f: ${f}, c: ${c}, p: ${p}`);
     return toRet;
 }
+// Turns chatgpt json into nutrition_details
+function artificialToNatural(artificial:any):nutritionDetails {
+    /* GPT 3.5 Turbo Output
+{
+  "Energy_kcal": "350",
+  "Carbohydrates_g": "10",
+  "Lipids_g": "15",
+  "Proteins_g": "30",
+  "Serving_size_oz": "6"
+}
+     */
+    const nDetails: nutritionDetails = {
+        calories: {
+        value: parseInt(artificial["Energy_kcal"]),
+        unit: "string"
+        },
+        servingSize: {
+        value: parseInt(artificial["Serving_size_oz"]),
+        unit: "oz"
+        },
+        fatContent: {
+        value: parseInt(artificial["Lipids_g"]),
+        unit: "string"
+        },
+        carbohydrateContent: {
+        value: parseInt(artificial["Carbohydrates_g"]),
+        unit: "string"
+        },
+        proteinContent: {
+        value: parseInt(artificial["Proteins_g"]),
+        unit: "string"
+        }
+    };
+    return nDetails;
+}
 // Leniency is the degree to which we're willing to fudge constraints
     // Only one to keep things simple and bounds symmetric
 async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,leniency:number,use_int:boolean):Promise<FoodSquare[]> {
@@ -613,12 +652,12 @@ async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f
         lp.generals = validFoods; // Don't need to do integers, np-hard and doesn't work with the constraints
     }
 
-    let filepath = "files/";
-    let filename = "meal_mip";
-    let dir_exists = fs.existsSync(filepath);
-    if (!dir_exists) { // If the directory already exists
-        await fs.promises.mkdir(filepath,{ recursive: true });
-    }
+    // let filepath = "files/";
+    // let filename = "meal_mip";
+    // let dir_exists = fs.existsSync(filepath);
+    // if (!dir_exists) { // If the directory already exists
+    //     await fs.promises.mkdir(filepath,{ recursive: true });
+    // }
     // fs.writeFile(filepath+filename+".json", JSON.stringify(lp), function(err:any, buf:any ) {
     //     if(err) {
     //         console.log("error: ", err);
@@ -737,7 +776,7 @@ async function inDatabase(daysAgo:number):Promise<boolean> {
     return fs.existsSync(filepath+filename+".json");
 }
 // Only call if the meal is in the archive
-async function outDatabase(daysAgo:number):Promise<string> {
+async function outDatabase(daysAgo:number):Promise<any> {
     let filepath = "files/";
     let filename = formattedDate(daysAgo)+"_dayinfo";
     return await JSON.parse(await fs.promises.readFile(filepath+filename+".json"));
@@ -790,6 +829,57 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
         }
     }
     return toRet;
+}
+// return all of the food objects from a given dayinfo that are nutritionless
+async function getNutritionless(daysAgo:number):Promise<any> {
+    let toRet:any = {};
+    let prevDayta:any = await outDatabase(daysAgo);
+    console.log("prevData entries: "+Object.entries(prevDayta));
+    for (const day in prevDayta.validMenus) { // all validmenus
+        console.log("Data type: "+typeof prevDayta.validMenus[day]);
+        // if (prevDayta.validMenus[day]) {
+        for (const meal in prevDayta.meals[day]) { // all validmeals
+        // if (prevDayta.validMeals[day][meals]) {
+            let foods = prevDayta.meals[day][meal];
+            if (Object.entries(foods).length != 0) { // {} check, TODO test if this works out
+                for (let i = 0; i < foods.length; i++) {
+                    if (foods[i].nutritionless) {
+                        toRet[foods[i]["id"]] = foods[i];
+                    }
+                }
+            }
+        // }
+        }
+        // }
+    }
+    return toRet;
+}
+// modifies with nutrition details
+async function convertToNutritioned(nutritionlesses:any):Promise<void> {
+    for (let i in nutritionlesses) {
+        let ns = nutritionlesses[i];
+        let newtrition = await getArtificialNutrition(ns["label"]);
+        ns["nutrition_details"] = artificialToNatural(newtrition);
+        ns.nutritionless = false;
+        ns["id"] = nutritionlesses[i];
+    }
+}
+async function getArtificialNutrition(name:string):Promise<any> {
+    const completion = await openai.chat.completions.create({
+        messages: [{ role: 'user', content: `As a dietitian, please draw a table to calculate line by line the energy (kcal)/carbohydrates (g)/lipids (g)/proteins (g) of the food items (raw, not cooked) used as ingredients in an "${name}" served for lunch in a cafeteria managed by Bon Appétit Management Company. In lieu of precise numbers, estimate the exact quantities of each ingredient and the effects of cooking processes to determine the energy (kcal)/carbohydrates (g)/lipids (g)/proteins (g) in a serving of ${name}, as well as how many ounces would be in that serving size.
+
+        Keep your response brief, only providing the final numerical result of the analysis in a json file with the totals of energy (kcal)/carbohydrates (g)/lipids (g)/proteins (g) as well as the serving size.`}],
+        // model: "gpt-4-1106-preview",
+        model: "gpt-3.5-turbo-1106",
+        response_format: { type: "json_object" },
+      });
+
+      return completion.choices[0].message.content;
+}
+// Returns the merged meal and artificial data
+async function mergeArtificialData(toWrite:any,daysAgo:number):Promise<any> {
+    // read in gpt data
+    // iterate through all of the days/meals/foods, and replace the foods with artificials based on matches in keyset
 }
 // Overview
   // This API will allow for the maintenance and use of a webscraper for Rose-Hulman's publicly available meal data
@@ -865,6 +955,8 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
         // Tested: 0.9*calories upper bound, 2 duplicates at most for each
             // Works within about 100 calories for meals between 500 and 1500 calories
         // It seems there's no free lunch with this linear programming/optimization business
+            // But by staring at the things that are annoying for long enough and coming up with an opposing constraint/objective, you can actually solve things
+                // Like, despite it being likely an artefact of the data, only upper bounding fat and iteratively widening the allowance until success for the best possible answer
     // Requiring not working
         // I had to set the quantity to 1 by default
     // PayloadTooLargeError
@@ -945,7 +1037,15 @@ router.get('/days_and_meals/:daysAgo/', async function(req:any, res:any) {
     }
     let toWrite:any = await getMenusAndMeals(daysAgo);
     await writeDayData(daysAgo,toWrite);
-    // Sorta arbitrary but I guess helps keep track of menu for each day
+
+    // If the gpt file exists, merge these together and send it as meals out
+    // If it's already been done, then don't either
+    let filepath = "files/";
+    let filename = formattedDate(daysAgo)+"_gpt_nutrition";
+    if (fs.existsSync(filepath+formattedDate(daysAgo)+filename+".json")) {
+        mergeArtificialData(toWrite,daysAgo);
+    }
+
     res.send(toWrite);
 });
 // Update
@@ -957,6 +1057,40 @@ router.put('/update_archive/',async function(req:any,res:any) {
             res.send("error writing: ", err);
         } else {
             res.send("success writing");
+        }
+    });
+});
+router.put('/generate_artificial_data/:daysAgo',async function(req:any,res:any) {
+    let daysAgo = req.params.daysAgo;
+    let filepath = "files/";
+    let filename = formattedDate(daysAgo)+"_dayinfo";
+    // If the file doesn't exist
+    if (!(fs.existsSync(filepath+filename+".json"))) { // Structured like this because I don't want to spend too much time messing with file processing stuff that will get refactored away, and have code that can be reused
+        res.send("Can't GPT what doesn't exist");
+        return;
+    }
+    // If it's already been done, then don't either
+    if (fs.existsSync(filepath+formattedDate(daysAgo)+"_gpt_nutrition.json")) {
+        res.send("Can't GPT what already has been");
+        return;
+    }
+
+    // now it's gpt time
+    // get all the nutritionless from chosen file
+    let nutritionlesses:any = await getNutritionless(daysAgo);
+    // get all nutritions from the nutritionlesses
+        // Key considerations
+            // Failing loudly
+    // returns all of the nutritions by id
+        // this way we can iterate through and match up with raw meal easily
+    await convertToNutritioned(nutritionlesses);
+
+    // Save in a file
+    fs.writeFile(filepath+formattedDate(daysAgo)+"_gpt_nutrition.json", JSON.stringify(nutritionlesses), function(err:any, buf:any ) {
+        if(err) {
+            res.send("error: ", err);
+        } else {
+            res.send("GPT data saved successfully!");
         }
     });
 });

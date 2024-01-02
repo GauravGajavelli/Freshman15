@@ -11,10 +11,8 @@ async function main() {
     //   },
     //   { role: "user", content: "How many cups are 5.0 ounces of steamed green peas? Provide the output as a JSON." },
     // ],
-    messages: [{ role: 'user', content: `As a dietitian, please draw a table to calculate line by line the
-    energy (kcal)/carbohydrates (g)/lipids (g)/proteins (g) of the food items (raw, not
-    cooked) used as ingredients in an "L&A chipotle glazed garlic roasted chicken" served for lunch in a cafeteria managed by Bon Appétit Management Company. In lieu of precise numbers, estimate the exact quantities of each ingredient and the effects of cooking processes to determine the energy (kcal)/carbohydrates (g)/lipids (g)/proteins (g) in a serving of L&A chipotle glazed garlic roasted chicken, as well as how many ounces would be in that serving size
-    
+    messages: [{ role: 'user', content: `As a dietitian, please draw a table to calculate line by line the energy (kcal)/carbohydrates (g)/lipids (g)/proteins (g) of the food items (raw, not cooked) used as ingredients in an "L&A chipotle glazed garlic roasted chicken" served for lunch in a cafeteria managed by Bon Appétit Management Company. In lieu of precise numbers, estimate the exact quantities of each ingredient and the effects of cooking processes to determine the energy (kcal)/carbohydrates (g)/lipids (g)/proteins (g) in a serving of L&A chipotle glazed garlic roasted chicken, as well as how many ounces would be in that serving size.
+
     Keep your response brief, only providing the final numerical result of the analysis in a json file with the totals of energy (kcal)/carbohydrates (g)/lipids (g)/proteins (g) as well as the serving size.`}],
     /*messages: [
       {
@@ -23,11 +21,14 @@ async function main() {
       },
       { role: "user", content: "For a L&A chipotle glazed garlic roasted chicken served for lunch in a cafeteria managed by Bon Appétit Management Company, what are the totals of energy (kcal)/carbohydrates (g)/lipids (g)/proteins (g) as well as the serving size? Provide your answer in JSON format." },
     ],*/
-    model: "gpt-4-1106-preview",
-    // model: "gpt-3.5-turbo-1106",
+    // model: "gpt-4-1106-preview",
+    model: "gpt-3.5-turbo-1106",
     response_format: { type: "json_object" },
   });
   console.log(completion.choices[0].message.content);
+  console.log(Object.entries(completion));
+  console.log(Object.entries(completion.choices));
+  console.log(Object.entries(completion.choices[0].message));
 }
 
 main();
