@@ -14,9 +14,9 @@
     text-align: center;
     flex-direction: column;
     flex-wrap: wrap;
-    padding-left: 3px;
+    /* padding-left: 3px;
     padding-right: 3px;
-    padding-bottom: 10px;
+    padding-bottom: 10px; */
 }
 .flex-container2 {
     display: flex;
@@ -93,7 +93,7 @@
     margin-left: 5px;
 }
 #lists .flex-container3 {
-    width: 30vw;
+    /* width: 30vw; */
 }
 #bottomRow {
     justify-content: left;

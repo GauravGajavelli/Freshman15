@@ -26,8 +26,8 @@
             <select id="date-select">
               <!-- NOTE: HAD NAME IN ADDITION TO VALUE -->
               <option value="0">Today</option>
-              <option value="8">Tomorrow</option>
-              <option value="9">Yesterday</option>
+              <option value="13">Tomorrow</option>
+              <option value="14">Yesterday</option>
             </select>
           </div>
           <div class = "flex-container3 flex-item2" id="meal">
@@ -88,9 +88,16 @@
         <div class = "flex-container3 flex-item2" id="plan">
           <h2>Planned Meal</h2>
         </div>
+        <div class = "flex-container3 flex-item2" id="output">
+          <canvas id="myChart" style="width:100%;max-width:700px"></canvas>
+        </div>
       </div>
     </div>
     </div>
+    <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js">
+    </script>
     <script src="scripts/main2.js"></script>
+    <script src="scripts/chester.js"></script>
   </body>
 </html>

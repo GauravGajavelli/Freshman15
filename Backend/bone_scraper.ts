@@ -751,7 +751,7 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
     let menus:any = {};
     let meals:string[] = ["breakfast", "lunch", "dinner"];
     // Bon site TODO Update when doing future testing
-    let days:number[] = [0,8,9];
+    let days:number[] = [0,13,14];
     for (let i:number = 0; i <= 2; i++) {
          // Added so we get the days relative to the given day; we want multiple days data corresponding to a single day
          // https://stackoverflow.com/questions/39269701/typescript-trying-the-addition-of-two-variables-but-get-the-concatenation-of-t

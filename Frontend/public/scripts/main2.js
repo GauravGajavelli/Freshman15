@@ -174,7 +174,7 @@ gung.FoodController = class {
         const banHeader = gung.htmlToElement(`<h3>Banned Foods</h3>`);
 		oldReqs.append(reqHeader);
         oldBans.append(banHeader);
-        clearPlan();
+        this.clearPlan();
     }
     clearPlan() {
         const oldPlan = document.querySelector(`#plan`);
@@ -227,9 +227,45 @@ gung.FoodController = class {
         oldBoard.parentElement.removeChild(oldBoard);
 		// oldList.parentElement.appendChild(newList);
     }
+    updateChart(plannedMeal) {
+        let normalizedFat = 0;
+        let normalizedProtein = 0;
+        let normalizedCarbohydrate = 0;
+        for (const fs in plannedMeal) {
+            normalizedFat += fs.food["nutrition_details"][]
+            normalizedProtein
+            normalizedCarbohydrate
+        }
+        const ctx = document.getElementById('myChart');
+        const xValues = ["Fat", "Protein", "Carbohydrates"];
+        const yValues = [normalizedFat, normalizedProtein, normalizedCarbohydrate];
+        const barColors = [
+        "#ffe101",
+        "#f95811",
+        "#00ff00"
+        ];
+    
+    new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: xValues,
+        datasets: [{
+          backgroundColor: barColors,
+          data: yValues
+        }]
+      },
+      options: {
+        title: {
+          display: true,
+          text: "Meal Nutrition"
+        }
+      }
+    });
+    }
     setPlan(plannedMeal) {
         // plannedMeal is an array of FoodSquares representing meal items
         this.clearPlan();
+        this.updateChart(plannedMeal);
         for (let i = 0; i < plannedMeal.length; i++) {
             const fs = plannedMeal[i];
             console.log("Festus: "+fs);
