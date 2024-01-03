@@ -902,7 +902,6 @@ async function mergeArtificialData(toWrite:any,daysAgo:number):Promise<any> {
             if (Object.keys(foods).length > 0) { // {} check
                 for (let i = 0; i < foods.length; i++) {
                     if (foods[i].nutritionless) {
-                        console.log("argarg");
                         foods[i] = gptData[foods[i].id];
                     }
                 }
@@ -1062,19 +1061,19 @@ router.get('/days_and_meals/:daysAgo/', async function(req:any, res:any) {
         res.send("Invalid day: "+daysAgo);
         return;
     }
+    let toWrite:any = [];
     if (await inDatabase(daysAgo)) {
-        res.send(await outDatabase(daysAgo));
-        return;
+        toWrite = await outDatabase(daysAgo);
+    } else {
+        toWrite = await getMenusAndMeals(daysAgo);
+        await writeDayData(daysAgo,toWrite);
     }
-    let toWrite:any = await getMenusAndMeals(daysAgo);
-    await writeDayData(daysAgo,toWrite);
-
     // If the gpt file exists, merge these together and send it as meals out
     // If it's already been done, then don't either
     let filepath = "files/";
     let filename = formattedDate(daysAgo)+"_gpt_nutrition";
-    if (fs.existsSync(filepath+formattedDate(daysAgo)+filename+".json")) {
-        mergeArtificialData(toWrite,daysAgo);
+    if (fs.existsSync(filepath+filename+".json")) {
+        await mergeArtificialData(toWrite,daysAgo);
     }
 
     res.send(toWrite);
