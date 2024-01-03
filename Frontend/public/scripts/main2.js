@@ -67,6 +67,7 @@ gung.FoodController = class {
             this.updateList();
             this.updateView();
             this.clearItems();
+            this.clearChart();
         };
 
         document.querySelector("#meal-select").onchange = async (event) => {
@@ -77,6 +78,7 @@ gung.FoodController = class {
             // this.updateList(); No need to update list and reset to breakfast with every meal select
             this.updateView();
             this.clearItems();
+            this.clearChart();
         };
 
         document.querySelector("#generate").onclick = async (event) => {
@@ -179,8 +181,16 @@ gung.FoodController = class {
     clearPlan() {
         const oldPlan = document.querySelector(`#plan`);
         oldPlan.innerHTML='';
-        const planHeader = gung.htmlToElement(`<h2>Planned Meal</h2>`);
+        const planHeader = gung.htmlToElement(`<h3>Planned Meal</h3>`);
 		oldPlan.append(planHeader);
+    }
+    clearChart() {
+        const oldOutput = document.querySelector(`#output`);
+        oldOutput.innerHTML='';
+        const chartHeader = gung.htmlToElement(`<h3>Macronutrient Ratios (%)</h3>`);
+        const newChart = gung.htmlToElement(`<canvas id="ratios" style="width:100%;max-width:700px"></canvas>`);
+        oldOutput.append(chartHeader);
+        oldOutput.append(newChart);
     }
     updateList() {
             const bOption = gung.htmlToElement(`<option value="0">Breakfast</option>`);
@@ -286,7 +296,6 @@ maintainAspectRatio: false,
         this.updateChart(plannedMeal);
         for (let i = 0; i < plannedMeal.length; i++) {
             const fs = plannedMeal[i];
-            console.log("Festus: "+fs);
             const oldPlan = document.querySelector("#plan");
             const newPlan = this._createItem(fs);
             oldPlan.append(newPlan);

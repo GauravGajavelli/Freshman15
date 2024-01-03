@@ -603,41 +603,6 @@ function solutionToFoods(solution:any,board:any):FoodSquare[] {
     console.log(`f: ${f}, c: ${c}, p: ${p}`);
     return toRet;
 }
-// Turns chatgpt json into nutrition_details
-function artificialToNatural(artificial:any):nutritionDetails {
-    /* GPT 3.5 Turbo Output
-{
-  "Energy_kcal": "350",
-  "Carbohydrates_g": "10",
-  "Lipids_g": "15",
-  "Proteins_g": "30",
-  "Serving_size_oz": "6"
-}
-     */
-    const nDetails: nutritionDetails = {
-        calories: {
-        value: parseInt(artificial["Energy_kcal"]),
-        unit: "string"
-        },
-        servingSize: {
-        value: parseInt(artificial["Serving_size_oz"]),
-        unit: "oz"
-        },
-        fatContent: {
-        value: parseInt(artificial["Lipids_g"]),
-        unit: "string"
-        },
-        carbohydrateContent: {
-        value: parseInt(artificial["Carbohydrates_g"]),
-        unit: "string"
-        },
-        proteinContent: {
-        value: parseInt(artificial["Proteins_g"]),
-        unit: "string"
-        }
-    };
-    return nDetails;
-}
 // Leniency is the degree to which we're willing to fudge constraints
     // Only one to keep things simple and bounds symmetric
 async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,leniency:number,use_int:boolean):Promise<FoodSquare[]> {
@@ -834,17 +799,20 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
 async function getNutritionless(daysAgo:number):Promise<any> {
     let toRet:any = {};
     let prevDayta:any = await outDatabase(daysAgo);
-    console.log("prevData entries: "+Object.entries(prevDayta));
+    // console.log("prevData entries: "+Object.entries(prevDayta));
+    // console.log("prevData.validMenus entries: "+Object.entries(prevDayta.validMenus));
+    // let count:number = 0;
     for (const day in prevDayta.validMenus) { // all validmenus
-        console.log("Data type: "+typeof prevDayta.validMenus[day]);
         // if (prevDayta.validMenus[day]) {
         for (const meal in prevDayta.meals[day]) { // all validmeals
         // if (prevDayta.validMeals[day][meals]) {
             let foods = prevDayta.meals[day][meal];
-            if (Object.entries(foods).length != 0) { // {} check, TODO test if this works out
+            if (Object.keys(foods).length > 0) { // {} check
                 for (let i = 0; i < foods.length; i++) {
                     if (foods[i].nutritionless) {
-                        toRet[foods[i]["id"]] = foods[i];
+                        const id:string = foods[i]["id"]/* count.toString()*/;
+                        toRet[id] = foods[i];
+                        // count++;
                     }
                 }
             }
@@ -854,14 +822,59 @@ async function getNutritionless(daysAgo:number):Promise<any> {
     }
     return toRet;
 }
+// Turns chatgpt json into nutrition_details
+async function artificialToNatural(artificial:any):Promise<nutritionDetails> {
+    /* GPT 3.5 Turbo Output
+{
+  "Energy_kcal": "350",
+  "Carbohydrates_g": "10",
+  "Lipids_g": "15",
+  "Proteins_g": "30",
+  "Serving_size_oz": "6"
+}
+     */
+    let parsed:any = await JSON.parse(artificial);
+    let keys:string[] = Object.keys(parsed); // the ordering is fixed (per observation), even if the names change
+    // console.log(artificial);
+    // console.log("Calories?: "+artificial[keys[0]]);
+    const nDetails: nutritionDetails = {
+        calories: {
+        value: parseInt(parsed[keys[0]]),
+        unit: "string"
+        },
+        servingSize: {
+        value: parseInt(parsed[keys[4]]),
+        unit: "oz"
+        },
+        fatContent: {
+        value: parseInt(parsed[keys[2]]),
+        unit: "string"
+        },
+        carbohydrateContent: {
+        value: parseInt(parsed[keys[1]]),
+        unit: "string"
+        },
+        proteinContent: {
+        value: parseInt(parsed[keys[3]]),
+        unit: "string"
+        }
+    };
+    return nDetails;
+}
 // modifies with nutrition details
 async function convertToNutritioned(nutritionlesses:any):Promise<void> {
+    // let count:number = 0;
     for (let i in nutritionlesses) {
+        // if ( count == 5) {
+        //     break;
+        // }
         let ns = nutritionlesses[i];
         let newtrition = await getArtificialNutrition(ns["label"]);
-        ns["nutrition_details"] = artificialToNatural(newtrition);
+        ns["nutrition_details"] = await artificialToNatural(newtrition);
         ns.nutritionless = false;
-        ns["id"] = nutritionlesses[i];
+
+        console.log("Converted: "+ns["label"]);
+        // count++;
     }
 }
 async function getArtificialNutrition(name:string):Promise<any> {
@@ -876,10 +889,26 @@ async function getArtificialNutrition(name:string):Promise<any> {
 
       return completion.choices[0].message.content;
 }
-// Returns the merged meal and artificial data
+// Returns the merged meal and artificial data TODO
 async function mergeArtificialData(toWrite:any,daysAgo:number):Promise<any> {
     // read in gpt data
+    let filepath = "files/";
+    let filename = formattedDate(daysAgo)+"_gpt_nutrition";
+    let gptData:any = await JSON.parse(await fs.promises.readFile(filepath+filename+".json"));
     // iterate through all of the days/meals/foods, and replace the foods with artificials based on matches in keyset
+    for (const day in toWrite.validMenus) { // all validmenus
+        for (const meal in toWrite.meals[day]) { // all validmeals
+            let foods = toWrite.meals[day][meal];
+            if (Object.keys(foods).length > 0) { // {} check
+                for (let i = 0; i < foods.length; i++) {
+                    if (foods[i].nutritionless) {
+                        console.log("argarg");
+                        foods[i] = gptData[foods[i].id];
+                    }
+                }
+            }
+        }
+    }
 }
 // Overview
   // This API will allow for the maintenance and use of a webscraper for Rose-Hulman's publicly available meal data
@@ -966,6 +995,8 @@ async function mergeArtificialData(toWrite:any,daysAgo:number):Promise<any> {
             // But the real solution could be modifying the way I'm posting and responding with the entire meals
             // To instead use a date sent and an id in lieu of the massive food object, and then just picking up the relevant menu from save file
                 // I don't actually have to do that, I just thought of it and that should be fine for this case
+    // Circular reference error when writing object to json
+        // It's not js magic, I actually just had a jank line where I set the id parameter of an object to itself
 // Create
 router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cratio/:pratio/', async function(req:any, res:any) {
     // gung.FoodSquare = class {
@@ -1060,7 +1091,10 @@ router.put('/update_archive/',async function(req:any,res:any) {
         }
     });
 });
-router.put('/generate_artificial_data/:daysAgo',async function(req:any,res:any) {
+router.put('/generate_artificial_data/:daysAgo/:password',async function(req:any,res:any) {
+    if (req.params.password != "kriskringle") {
+        return;
+    }
     let daysAgo = req.params.daysAgo;
     let filepath = "files/";
     let filename = formattedDate(daysAgo)+"_dayinfo";
