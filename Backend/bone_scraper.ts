@@ -61,6 +61,7 @@ type Food = {
     "meal":meals,
     "tier":foodTier,
     "nutritionless":boolean,
+    "artificial_nutrition":boolean,
     "nutrition": {
         "kcal": number,
         "well_being": number,
@@ -135,6 +136,7 @@ function food_factory (id: number, name: string, calories:number, carbs: number,
         meal:melie,
         tier:tear,
         nutritionless:nutritionl,
+        artificial_nutrition:false,
         nutrition: {
             kcal: calories,
             well_being: 1010101,
@@ -872,7 +874,7 @@ async function convertToNutritioned(nutritionlesses:any):Promise<void> {
         let newtrition = await getArtificialNutrition(ns["label"]);
         ns["nutrition_details"] = await artificialToNatural(newtrition);
         ns.nutritionless = false;
-
+        ns.artificial_nutrition = true;
         console.log("Converted: "+ns["label"]);
         // count++;
     }

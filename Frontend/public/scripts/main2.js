@@ -304,7 +304,7 @@ maintainAspectRatio: false,
     _createSquare(fs) {
         if (fs.banned) {
             return gung.htmlToElement(`
-            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}" id="f${fs.food["id"]}"><h1>${fs.food["label"]}</h1>
+            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""} ${fs.food["artificial_nutrition"]?"artificial_nutrition":""}" id="f${fs.food["id"]}"><h1>${fs.food["label"]}</h1>
             <button>
               Add Back
             </button>
@@ -312,7 +312,7 @@ maintainAspectRatio: false,
             `);
         } else if (fs.required) {
             return gung.htmlToElement(`
-            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}" id="f${fs.food["id"]}"><h1>${fs.food["label"]}</h1>
+            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""} ${fs.food["artificial_nutrition"]?"artificial_nutrition":""}" id="f${fs.food["id"]}"><h1>${fs.food["label"]}</h1>
             <span>
               <span>
                 <input type="number" id="quantity" min="1" max="10" value="${fs.quantity == 0?1:fs.quantity}"/>
@@ -325,7 +325,7 @@ maintainAspectRatio: false,
             `);
         } else {
             return gung.htmlToElement(`
-            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""}" id="f${fs.food["id"]}"><h1>${fs.food["label"]}</h1>
+            <div class="flex-item ${fs.food["nutritionless"]?"nutritionless":""} ${fs.food["artificial_nutrition"]?"artificial_nutrition":""}" id="f${fs.food["id"]}"><h1>${fs.food["label"]}</h1>
             <button>
               Add
             </button>

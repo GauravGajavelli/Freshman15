@@ -83,6 +83,9 @@
 .nutritionless {
     background-color: lightcoral;
 }
+.artificial_nutrition {
+    background-color: mediumaquamarine;
+}
 #quantity {
     font-size: 1em;
 }
