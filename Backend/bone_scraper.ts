@@ -839,25 +839,26 @@ async function artificialToNatural(artificial:any):Promise<nutritionDetails> {
     let keys:string[] = Object.keys(parsed); // the ordering is fixed (per observation), even if the names change
     // console.log(artificial);
     // console.log("Calories?: "+artificial[keys[0]]);
+    let numOz:number = parseInt(parsed[keys[4]]); // normalizing to 1 oz to make it easier for them to fit into a meal
     const nDetails: nutritionDetails = {
         calories: {
-        value: parseInt(parsed[keys[0]]),
+        value: parseInt(parsed[keys[0]])/numOz,
         unit: "string"
         },
         servingSize: {
-        value: parseInt(parsed[keys[4]]),
+        value: 1,
         unit: "oz"
         },
         fatContent: {
-        value: parseInt(parsed[keys[2]]),
+        value: parseInt(parsed[keys[2]])/numOz,
         unit: "string"
         },
         carbohydrateContent: {
-        value: parseInt(parsed[keys[1]]),
+        value: parseInt(parsed[keys[1]])/numOz,
         unit: "string"
         },
         proteinContent: {
-        value: parseInt(parsed[keys[3]]),
+        value: parseInt(parsed[keys[3]])/numOz,
         unit: "string"
         }
     };

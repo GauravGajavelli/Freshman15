@@ -104,6 +104,10 @@
 #bottomRow {
     justify-content: left;
 }
+canvas {
+    width:100%;
+    max-width:700px;
+}
 
 /* // Extra small devices (portrait phones, less than 576px) */
 /* // No media query since this is the default in Bootstrap */

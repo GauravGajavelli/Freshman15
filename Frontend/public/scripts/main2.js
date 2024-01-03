@@ -185,12 +185,15 @@ gung.FoodController = class {
 		oldPlan.append(planHeader);
     }
     clearChart() {
-        const oldOutput = document.querySelector(`#output`);
-        oldOutput.innerHTML='';
-        const chartHeader = gung.htmlToElement(`<h3>Macronutrient Ratios (%)</h3>`);
-        const newChart = gung.htmlToElement(`<canvas id="ratios" style="width:100%;max-width:700px"></canvas>`);
-        oldOutput.append(chartHeader);
-        oldOutput.append(newChart);
+        // const oldOutput = document.querySelector(`#output`);
+        // oldOutput.innerHTML='';
+        // const chartHeader = gung.htmlToElement(`<h3>Macronutrient Ratios (%)</h3>`);
+        // const newChart = gung.htmlToElement(`<canvas id="ratios"></canvas>`);
+        // oldOutput.append(chartHeader);
+        // oldOutput.append(newChart);
+        const oldChart = document.querySelector("#ratios");
+        oldChart.data = {};
+        oldChart.update();
     }
     updateList() {
             const bOption = gung.htmlToElement(`<option value="0">Breakfast</option>`);
