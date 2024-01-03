@@ -8,6 +8,7 @@
     flex-wrap: wrap;
     justify-content: center;
     align-items: baseline;
+    padding: 0px;
 }
 .flex-container3 {
     display: flex;
@@ -32,6 +33,7 @@
     flex-direction: row;
     text-align: center;
     justify-content: right;
+    padding-bottom: 5px;
 }
 .flex-container6 {
     display: flex;
@@ -50,10 +52,13 @@
     flex-direction: row;
     justify-content: space-evenly;
 }
+.flex-container11 {
+    text-align: center;
+}
 .flex-item {
     background-color: #f1f1f1;
     color: #000;
-    margin: 10px;
+    margin: 3px;
     font-size: 0.5em;
 }
 .flex-item span {
@@ -80,6 +85,9 @@
 .added {
     color: red;
 }
+.artificial {
+    background-color: mediumaquamarine;
+}
 .nutritionless {
     background-color: lightcoral;
 }
@@ -105,8 +113,15 @@
     justify-content: left;
 }
 canvas {
-    width:100%;
-    max-width:700px;
+    /* width:100%;
+    max-width:700px; */
+    /* width: 30vw;
+    height: 30vw; */
+    padding-bottom: 5vh;
+}
+.unpadded {
+    padding: 0;
+    margin:3px;
 }
 
 /* // Extra small devices (portrait phones, less than 576px) */

@@ -74,6 +74,7 @@
           <button id="generate">
             <h1>Generate Meal</h1>
           </button>
+          <h6 class="unpadded">Click or Press Enter to Generate a Meal</h6>
         </div>
       </div>
     </div>
@@ -91,8 +92,26 @@
         <div class = "flex-container10 flex-item2" id="output">
           <h3>Macronutrient Ratios (%)</h3>
           <canvas id="ratios" style="width:100%;max-width:700px"></canvas>
+          <h6 class="unpadded">Hover to see %, Click names to toggle</h6>
         </div>
       </div>
+    </div>
+    <div class="flex-container11" id="bottomest">
+      <h3>Understanding Planned Meal</h3>
+      <div>Item format: </div>
+      <div class = "flex-container9">
+        <div class="flex-container5  flex-item2">
+          <span>Label</span>
+          <button>Serving Size x Quantity</button>
+        </div>
+      </div>
+      <div>The Bon provides utensils at each station (e.g. a ladel for scrambled egg or a cup for milk) that help approximate the specified serving size
+      </div>
+      <br>
+      <div>Food served in discrete pieces like biscuits or french toast can be assumed to be 1 serving each, unless data is artificial (generated via LLM, highlighted green)
+      </div>
+      <br>
+      <a href="https://www.siue.edu/campus-recreation/facilities/EstimatingPortionSizesUsingYourHands.pdf">For ambiguous and/or ChatGPT'd foods, see these guidelines for estimating</a>
     </div>
     </div>
     <script

@@ -68,6 +68,7 @@ gung.FoodController = class {
             this.updateView();
             this.clearItems();
             this.clearChart();
+            await this.model.generateMeal();
         };
 
         document.querySelector("#meal-select").onchange = async (event) => {
@@ -79,6 +80,7 @@ gung.FoodController = class {
             this.updateView();
             this.clearItems();
             this.clearChart();
+            await this.model.generateMeal();
         };
 
         document.querySelector("#generate").onclick = async (event) => {
@@ -95,7 +97,7 @@ gung.FoodController = class {
             this.model.toggleGlutenFree();
         }
 
-        document.querySelector("#calories").onchange = (event) => {
+        document.querySelector("#calories").onchange = async (event) => {
             let val = document.querySelector("#calories");
             let newVal = val.value;
             // if (val < 0) {
@@ -105,8 +107,9 @@ gung.FoodController = class {
             // }
             // val.value = newVal;
             this.model.setCalories(newVal);
+            await this.model.generateMeal();
         }
-        document.querySelector("#fat").onchange = (event) => {
+        document.querySelector("#fat").onchange = async (event) => {
             let f = document.querySelector("#fat");
             let c = document.querySelector("#carbohydrate");
             let p = document.querySelector("#protein");
@@ -121,8 +124,9 @@ gung.FoodController = class {
             // }
             // val.value = newVal;
             this.model.setFat(newVal);
+            await this.model.generateMeal();
         }
-        document.querySelector("#carbohydrate").onchange = (event) => {
+        document.querySelector("#carbohydrate").onchange = async (event) => {
             // let f = document.querySelector("#fat");
             // let c = document.querySelector("#carbohydrate");
             // let p = document.querySelector("#protein");
@@ -137,8 +141,9 @@ gung.FoodController = class {
             // }
             // val.value = newVal;
             this.model.setCarbohydrate(newVal);
+            await this.model.generateMeal();
         }
-        document.querySelector("#protein").onchange = (event) => {
+        document.querySelector("#protein").onchange = async (event) => {
             // let f = document.querySelector("#fat");
             // let c = document.querySelector("#carbohydrate");
             // let p = document.querySelector("#protein");
@@ -153,7 +158,13 @@ gung.FoodController = class {
             // }
             // val.value = newVal;
             this.model.setProtein(newVal);
+            await this.model.generateMeal();
         }
+        document.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                await this.model.generateMeal();
+            }
+        });
         this.updateList();
         this.updateView();
 	}
@@ -191,9 +202,11 @@ gung.FoodController = class {
         // const newChart = gung.htmlToElement(`<canvas id="ratios"></canvas>`);
         // oldOutput.append(chartHeader);
         // oldOutput.append(newChart);
-        const oldChart = document.querySelector("#ratios");
-        oldChart.data = {};
-        oldChart.update();
+        const oldChart = document.querySelector("#ratios"); 
+        if (oldChart) {
+            oldChart.data = {};
+            // oldChart.update();
+        }
     }
     updateList() {
             const bOption = gung.htmlToElement(`<option value="0">Breakfast</option>`);
@@ -256,9 +269,9 @@ gung.FoodController = class {
         let normalizedCarbohydrateCals = totalCals?(c*100)/totalCals:0;
         let normalizedProteinCals = totalCals? (p*100)/totalCals:0;
 
-        console.log("f: "+normalizedFatCals);
-        console.log("c: "+normalizedCarbohydrateCals);
-        console.log("p: "+normalizedProteinCals);
+        // console.log("f: "+normalizedFatCals);
+        // console.log("c: "+normalizedCarbohydrateCals);
+        // console.log("p: "+normalizedProteinCals);
         
         const ctx = document.getElementById('ratios');
         const xValues = ["Fat", "Protein", "Carbohydrates"];
@@ -269,7 +282,7 @@ gung.FoodController = class {
             "#00ff00"
         ];
         this.chart = new Chart(ctx, {
-            type: "pie",
+            type: "doughnut",
             data: {
                 labels: xValues,
                 datasets: [{
@@ -278,18 +291,9 @@ gung.FoodController = class {
                 }]
             },
             options: {
-                // title: {
-                //     display: true,
-                //     text: "Macronutrient Ratios"
-                // }
-                // Boolean - whether or not the chart should be responsive and resize when the browser does.
-
-responsive: true,
-
-// Boolean - whether to maintain the starting aspect ratio or not when responsive, if set to false, will take up entire container
-
-maintainAspectRatio: false,
-
+                interaction: {
+                    intersect:true
+                }
             }
         });
     }
@@ -357,11 +361,11 @@ maintainAspectRatio: false,
         } else { // neither banned nor required: a final meal item
             let perServing = parseFloat(!fs.food.nutritionless?fs.food["nutrition_details"]["servingSize"]["value"]:"1");
             let units = !fs.food.nutritionless?fs.food["nutrition_details"]["servingSize"]["unit"]:"units";
-            console.log(Object.entries(fs));
+            // console.log(Object.entries(fs));
             return gung.htmlToElement(`
-            <div id="f${fs.food["id"]}" class="flex-container5">
+            <div id="f${fs.food["id"]}" class="${fs.food.artificial_nutrition?"artificial":""} flex-container5">
             <span>${fs.food["label"]}</span>
-            <button>${this.roundNum(fs.quantity*perServing)} ${units}</button>
+            <button>${this.roundNum(/*fs.quantity* */perServing)} ${units} x ${fs.quantity}</button>
             </div>
             `);
         }
@@ -379,7 +383,7 @@ maintainAspectRatio: false,
             // </button>
             // </div>
             // `);
-            square.children[1].onclick = (event) => {
+            square.children[1].onclick = async (event) => {
                 // Prolly need to do some model stuff
                 // this.game.pressedButtonAtIndex(buttonIndex);
                 fs.banned = false;
@@ -387,6 +391,7 @@ maintainAspectRatio: false,
                     const item = document.querySelector(`#banned #f${fs.food["id"]}`);
                     oldBans.removeChild(item);
                 this.updateView();
+                await this.model.generateMeal();
             };
         } else if (fs.required) {
             // return gung.htmlToElement(`
@@ -401,7 +406,7 @@ maintainAspectRatio: false,
             // </span>
             // </div>
             // `);
-            square.children[1].children[1].onclick = (event) => {
+            square.children[1].children[1].onclick = async (event) => {
                 // Prolly need to do some model stuff
                 // this.game.pressedButtonAtIndex(buttonIndex);
                 fs.required = false;
@@ -409,8 +414,9 @@ maintainAspectRatio: false,
                     const item = document.querySelector(`#required #f${fs.food["id"]}`);
                     oldReqs.removeChild(item);
                 this.updateView();
+                await this.model.generateMeal();
             };
-            square.children[1].children[0].children[0].onchange = (event) => {
+            square.children[1].children[0].children[0].onchange = async (event) => {
                 let val = square.children[1].children[0].children[0].value;
                 let newVal = val;
                 if (val < 1) {
@@ -422,6 +428,7 @@ maintainAspectRatio: false,
                 let foodID = square.id;
                 this.model.setFoodFreq(foodID,newVal);
                 square.children[1].children[0].children[0].value = newVal;
+                await this.model.generateMeal();
             }
             // TODO Set up click stuff
         } else { // neither banned nor required
@@ -435,7 +442,7 @@ maintainAspectRatio: false,
             // </button>
             // </div>
             // `);
-            square.children[1].onclick = (event) => {
+            square.children[1].onclick = async (event) => {
                 // Prolly need to do some model stuff
                 // this.game.pressedButtonAtIndex(buttonIndex);
                 fs.required = true;
@@ -444,8 +451,9 @@ maintainAspectRatio: false,
                     this._setUpDelete(newReq,fs);
                     oldReqs.append(newReq);
                 this.updateView();
+                await this.model.generateMeal();
             };
-            square.children[2].onclick = (event) => {
+            square.children[2].onclick = async (event) => {
                 // Prolly need to do some model stuff
                 // this.game.pressedButtonAtIndex(buttonIndex);
                 fs.banned = true;
@@ -454,11 +462,12 @@ maintainAspectRatio: false,
                     this._setUpDelete(newBan,fs);
                     oldBans.append(newBan);
                 this.updateView();
+                await this.model.generateMeal();
             };
         }
     }
     _setUpDelete(item,fs) { // adds a delete click listener for a list item
-        item.children[1].onclick = (event) => {
+        item.children[1].onclick = async (event) => {
             // Prolly need to do some model stuff
             // this.game.pressedButtonAtIndex(buttonIndex);
             const oldList = document.querySelector(`#${fs.banned?"banned":"required"}`); // Assumes banned if not required because in list
@@ -469,6 +478,7 @@ maintainAspectRatio: false,
             }
             oldList.removeChild(item);
             this.updateView();
+            await this.model.generateMeal();
         };
     }
 }
@@ -500,6 +510,8 @@ gung.Model = class {
         this.fat = 25;
         this.carb = 55;
         this.protein = 20;
+
+        this.plannedMeal = [];
     }
 
     /**
@@ -591,7 +603,8 @@ gung.Model = class {
             body: JSON.stringify(this.board)
         });
         const plannedMeal = await resp.json();
-        console.log(plannedMeal);
+        // console.log(plannedMeal);
+        this.plannedMeal = plannedMeal;
         this.controller.setPlan(plannedMeal);
     }
 }
