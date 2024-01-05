@@ -4,119 +4,123 @@
 <!DOCTYPE html>
 
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freshman 15</title>
-    <link rel="stylesheet" href="styles/main.css" />
-  </head>
 
-  <body>
-    <nav class="flex-container6">
-      <h1>Freshman 15: Rose-Hulman Meal Customization Application</h1>
-    </nav>
-    <div class="flex-container2" id="mainPage">
-      <div class="flex-container6" id="topRow"> 
-        <div class="flex-container" id="foods">
-          <!-- I want this to have it's own little square scrolling area to prevent it from growing too much -->
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freshman 15</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+
+<body>
+  <nav class="flex-container6">
+    <h1>Freshman 15: Rose-Hulman Meal Customization Application</h1>
+  </nav>
+  <div class="flex-container2" id="mainPage">
+    <div class="flex-container6" id="topRow">
+      <div class="flex-container" id="foods">
+        <!-- I want this to have it's own little square scrolling area to prevent it from growing too much -->
+      </div>
+      <div class="flex-container8" id="settings">
+        <div class="flex-container3 flex-item2" id="date">
+          <h3>Date</h3>
+          <select id="date-select">
+            <!-- NOTE: HAD NAME IN ADDITION TO VALUE -->
+            <option value="0">Today</option>
+            <option value="13">Tomorrow</option>
+            <option value="14">Yesterday</option>
+          </select>
         </div>
-        <div class="flex-container8" id="settings">
-          <div class = "flex-container3 flex-item2" id="date">
-            <h3>Date</h3>
-            <select id="date-select">
-              <!-- NOTE: HAD NAME IN ADDITION TO VALUE -->
-              <option value="0">Today</option>
-              <option value="13">Tomorrow</option>
-              <option value="14">Yesterday</option>
-            </select>
-          </div>
-          <div class = "flex-container3 flex-item2" id="meal">
-            <h3>Meal</h3>
-            <select id="meal-select">
-              <!-- <option value="0">Breakfast</option>
+        <div class="flex-container3 flex-item2" id="meal">
+          <h3>Meal</h3>
+          <select id="meal-select">
+            <!-- <option value="0">Breakfast</option>
               <option value="1">Lunch</option>
               <option value="2">Dinner</option> -->
-            </select>
-          </div>
-          <div class = "flex-container3 flex-item2" id="diets">
-            <h3>Dietary Restrictions</h3>
-            <div class="flex-container9">
-              <div class = flex-container2>
-                <span>Vegetarian</span>
-                <span>Vegan</span>
-                <span>Gluten-Free</span>
-              </div>
-              <div class = flex-container2>
-                <input type="checkbox" id="vegetarian">
-                <input type="checkbox" id="vegan">
-                <input type="checkbox" id="glutenfree">
-              </div>
+          </select>
+        </div>
+        <div class="flex-container3 flex-item2" id="diets">
+          <h3>Dietary Restrictions</h3>
+          <div class="flex-container9">
+            <div class=flex-container2>
+              <span>Vegetarian</span>
+              <span>Vegan</span>
+              <span>Gluten-Free</span>
+            </div>
+            <div class=flex-container2>
+              <input type="checkbox" id="vegetarian">
+              <input type="checkbox" id="vegan">
+              <input type="checkbox" id="glutenfree">
             </div>
           </div>
-          <div class = "flex-container3 flex-item2" id="parameters">
-            <h3>Meal Parameters</h3>
-            <div class="flex-container9">
-              <div class = "flex-container2">
-                <span class="flex-item3">Calories: </span>
-                <span class="flex-item3">Fat %: </span>
-                <span class="flex-item3">Carb %: </span>
-                <span class="flex-item3">Protein %: </span>
-              </div>
-              <div class = flex-container2>
-                <!-- These limits abide by a certain principle of user design: what they can't see won't hurt 'em -->
-                <input type="number" min="500" max="1500" value="750" id="calories">
-                <input type="number" min="0" max="100" value="25" id="fat">
-                <input type="number" min="0" max="100" value="55" id="carbohydrate">
-                <input type="number" min="0" max="100" value="20" id="protein">
-              </div>
+        </div>
+        <div class="flex-container3 flex-item2" id="parameters">
+          <h3>Meal Parameters</h3>
+          <div class="flex-container9">
+            <div class="flex-container2">
+              <span class="flex-item3">Calories: </span>
+              <span class="flex-item3">Fat %: </span>
+              <span class="flex-item3">Carb %: </span>
+              <span class="flex-item3">Protein %: </span>
+            </div>
+            <div class=flex-container2>
+              <!-- These limits abide by a certain principle of user design: what they can't see won't hurt 'em -->
+              <input type="number" min="500" max="1500" value="750" id="calories">
+              <input type="number" min="0" max="100" value="25" id="fat">
+              <input type="number" min="0" max="100" value="55" id="carbohydrate">
+              <input type="number" min="0" max="100" value="20" id="protein">
             </div>
           </div>
-          <button id="generate">
-            <h1>Generate Meal</h1>
-          </button>
-          <h6 class="unpadded">Click or Press Enter to Generate a Meal</h6>
         </div>
+        <button id="generate">
+          <h1>Generate Meal</h1>
+        </button>
+        <h6 class="unpadded">Click or Press Enter to Generate a Meal</h6>
       </div>
     </div>
-    <div class="flex-container6" id="bottomRow">
-      <div class="flex-container4" id="lists">
-        <div class = "flex-container3 flex-item2" id="required">
-          <h3>Required Foods</h3>
-        </div>
-        <div class = "flex-container3 flex-item2" id="banned">
-          <h3>Banned Foods</h3>
-        </div>
-        <div class = "flex-container3 flex-item2" id="plan">
-          <h3>Planned Meal</h3>
-        </div>
-        <div class = "flex-container10 flex-item2" id="output">
-          <h3>Macronutrient Ratios (%)</h3>
-          <canvas id="ratios" style="width:100%;max-width:700px"></canvas>
-          <h6 class="unpadded">Hover to see %, Click names to toggle</h6>
-        </div>
+  </div>
+  <div class="flex-container6" id="bottomRow">
+    <div class="flex-container4" id="lists">
+      <div class="flex-container3 flex-item2" id="required">
+        <h3>Required Foods</h3>
+      </div>
+      <div class="flex-container3 flex-item2" id="banned">
+        <h3>Banned Foods</h3>
+      </div>
+      <div class="flex-container3 flex-item2" id="plan">
+        <h3>Planned Meal</h3>
+      </div>
+      <div class="flex-container10 flex-item2" id="output">
+        <h3>Macronutrient Ratios (%)</h3>
+        <canvas id="ratios" style="width:100%;max-width:700px"></canvas>
+        <h6 class="unpadded">Hover to see %, Click names to toggle</h6>
       </div>
     </div>
-    <div class="flex-container11" id="bottomest">
-      <h3>Understanding Planned Meal</h3>
-      <div>Item format: </div>
-      <div class = "flex-container9">
-        <div class="flex-container5  flex-item2">
-          <span>Label</span>
-          <button>Serving Size x Quantity</button>
-        </div>
+  </div>
+  <div class="flex-container11" id="bottomest">
+    <h3>Understanding Planned Meal</h3>
+    <div>Item format: </div>
+    <div class="flex-container9">
+      <div class="flex-container5  flex-item2">
+        <span>Label</span>
+        <button>Serving Size x Quantity</button>
       </div>
-      <div>The Bon provides utensils at each station (e.g. a ladel for scrambled egg or a cup for milk) that help approximate the specified serving size
-      </div>
-      <br>
-      <div>Food served in discrete pieces like biscuits or french toast can be assumed to be 1 serving each, unless data is artificial (generated via LLM, highlighted green)
-      </div>
-      <br>
-      <a href="https://www.siue.edu/campus-recreation/facilities/EstimatingPortionSizesUsingYourHands.pdf">For ambiguous and/or ChatGPT'd foods, see these guidelines for estimating</a>
     </div>
+    <div>The Bon provides utensils at each station (e.g., a ladel for scrambled egg or a cup for milk) that help
+      approximate the specified serving size
     </div>
-    <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js">
-    </script>
-    <script src="scripts/main2.js"></script>
-  </body>
+    <br>
+    <div>Food served in discrete pieces like biscuits or french toast can be assumed to be 1 serving each, unless data
+      is artificial (generated via LLM, highlighted green)
+    </div>
+    <br>
+    <a href="https://www.siue.edu/campus-recreation/facilities/EstimatingPortionSizesUsingYourHands.pdf">For ambiguous
+      and/or ChatGPT'd foods, see these guidelines for estimating</a>
+  </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js">
+  </script>
+  <script src="scripts/main2.js"></script>
+</body>
+
 </html>

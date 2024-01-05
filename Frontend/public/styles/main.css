@@ -1,6 +1,9 @@
 /* Sources */
 /* https://www.w3schools.com/css/css3_flexbox.asp */
 /* https://www.instacart.com/store/kroger-delivery-now/storefront */
+body {
+    background-color: lemonchiffon;
+}
 .flex-container {
     display: flex;
     text-align: center;
@@ -56,10 +59,13 @@
     text-align: center;
 }
 .flex-item {
-    background-color: #f1f1f1;
+    /* background-color: #f1f1f1; */
+    background-color: white;
     color: #000;
-    margin: 3px;
+    margin-left: 5px;
+    margin-right: 5px;
     font-size: 0.5em;
+    border-radius: 10px;
 }
 .flex-item span {
     display: flex;
@@ -68,11 +74,13 @@
     flex-direction: row;
 }
 .flex-item button {
-    background-color: #f1f1f1;
+    /* background-color: #f1f1f1; */
+    /* background-color: lightseagreen; */
     color: #000;
 }
 .flex-item2 {
-    background-color: #f1f1f1;
+    /* background-color: #f1f1f1; */
+    background-color: lemonchiffon;
     color: #000;
     margin: 10px;
 }
@@ -122,6 +130,9 @@ canvas {
 .unpadded {
     padding: 0;
     margin:3px;
+}
+button {
+    background-color: lightcyan;
 }
 
 /* // Extra small devices (portrait phones, less than 576px) */

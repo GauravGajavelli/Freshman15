@@ -1,6 +1,6 @@
 // TODO
     // Implement dietary preference filtering (vegetarian means we only show vegetarian foods, etc.)
-    // Implement hover nutrition details (for planned meal and individual items)
+    // Implement hover/click nutrition details (for planned meal and individual items)
     // Implement cases for when there just is no feasible meal with the given requirements
     // Implement input cleaning for numbers
     // (Resolved, see implement hover nutrition) Implement running requirements nutrition and final output nutrition locations
