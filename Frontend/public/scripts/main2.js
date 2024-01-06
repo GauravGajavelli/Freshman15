@@ -1,6 +1,5 @@
 // TODO
     // Implement dietary preference filtering (vegetarian means we only show vegetarian foods, etc.)
-    // Implement hover/click nutrition details (for planned meal and individual items)
     // Implement cases for when there just is no feasible meal with the given requirements
     // Implement input cleaning for numbers
     // (Resolved, see implement hover nutrition) Implement running requirements nutrition and final output nutrition locations
@@ -88,15 +87,15 @@ gung.FoodController = class {
         }
         document.querySelector("#required").onclick = async (event) => {
             let nutrition = this.model.getRequiredNutrition();
-            this._showNutrition(nutrition);
+            this._showNutrition(nutrition,"Required Foods");
         }
         document.querySelector("#banned").onclick = async (event) => {
             let nutrition = this.model.getBannedNutrition();
-            this._showNutrition(nutrition);
+            this._showNutrition(nutrition,"Banned Foods");
         }
         document.querySelector("#plan").onclick = async (event) => {
             let nutrition = this.model.getPlannedNutrition();
-            this._showNutrition(nutrition);
+            this._showNutrition(nutrition, "Planned Meal");
         }
         
         document.querySelector("#vegetarian").onchange = async (event) => {
@@ -492,7 +491,7 @@ gung.FoodController = class {
                 food.fatContent.value,
                 food.carbohydrateContent.value,
                 food.proteinContent.value]; // k, f, c, p
-            this._showNutrition(nutrition);
+            this._showNutrition(nutrition, fs.food.label);
         }
     }
     _setUpDelete(item,fs) { // adds a delete click listener for a list item
@@ -520,11 +519,12 @@ gung.FoodController = class {
                 qty*food.fatContent.value,
                 qty*food.carbohydrateContent.value,
                 qty*food.proteinContent.value]; // k, f, c, p
-            this._showNutrition(nutrition);
+            this._showNutrition(nutrition, fs.food.label+(fs.food.quantity==1?"":" x "+fs.food.quantity));
         };
     }
-    _showNutrition(nutrition) {
-        // number.innerText = Math.floor(Math.random() * 1000);
+    // Apparently you can query select for these by doing id.innerText, slick
+    _showNutrition(nutrition, name) {
+        document.querySelector("#name").innerText = name;
         modalk.innerText = nutrition[0];
         modalf.innerText = nutrition[1];
         modalc.innerText = nutrition[2];
