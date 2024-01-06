@@ -73,12 +73,7 @@ body {
 .artificial_nutrition:hover {
     background-color: aquamarine;
 }
-.flex-item button:hover {
-    /* Do nothing */
-}
-.artificial_nutrition button:hover {
-    /* Do nothing */
-}
+
 .flex-item span {
     display: flex;
     text-align: center;
@@ -125,6 +120,9 @@ body {
 }
 #lists .flex-container3 {
     width: 20vw;
+}
+#lists .flex-container3:hover {
+    background-color: beige;
 }
 #lists .flex-container10 {
     width: 30vw;

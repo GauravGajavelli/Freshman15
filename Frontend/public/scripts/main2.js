@@ -86,7 +86,19 @@ gung.FoodController = class {
         document.querySelector("#generate").onclick = async (event) => {
             await this.model.generateMeal();
         }
-
+        document.querySelector("#required").onclick = async (event) => {
+            let nutrition = this.model.getRequiredNutrition();
+            this._showNutrition(nutrition);
+        }
+        document.querySelector("#banned").onclick = async (event) => {
+            let nutrition = this.model.getBannedNutrition();
+            this._showNutrition(nutrition);
+        }
+        document.querySelector("#plan").onclick = async (event) => {
+            let nutrition = this.model.getPlannedNutrition();
+            this._showNutrition(nutrition);
+        }
+        
         document.querySelector("#vegetarian").onchange = async (event) => {
             this.model.toggleVegetarian();
         }
@@ -175,7 +187,7 @@ gung.FoodController = class {
         model.setController(ctrlr); // To enable two way communication
         return ctrlr;
     }
-    updateView() {
+    updateView() { // I guess this should also add the modal listeners for the lists
         this.updateBoard();
     }
     clearItems() {
@@ -305,6 +317,7 @@ gung.FoodController = class {
             const fs = plannedMeal[i];
             const oldPlan = document.querySelector("#plan");
             const newPlan = this._createItem(fs);
+            this._setUpPopup(newPlan,fs);
             oldPlan.append(newPlan);
         }
     }
@@ -374,6 +387,7 @@ gung.FoodController = class {
     roundNum(num) {
         return Math.round(num * 10) / 10;
     }
+    // TODO; If stopPropagation causes problems in the future: https://css-tricks.com/dangers-stopping-event-propagation/
     _setUpClick(square,fs) {
         if (fs.banned) {
             // return gung.htmlToElement(`
@@ -418,8 +432,10 @@ gung.FoodController = class {
                 this.updateView();
                 await this.model.generateMeal();
             };
-            square.children[1].children[0].children[0].onchange = async (event) => {
+            square.children[1].children[0].children[0].onclick = async (event) => {
                 event.stopPropagation();
+            }
+            square.children[1].children[0].children[0].onchange = async (event) => {
                 let val = square.children[1].children[0].children[0].value;
                 let newVal = val;
                 if (val < 1) {
@@ -448,6 +464,7 @@ gung.FoodController = class {
             square.children[1].onclick = async (event) => {
                 // Prolly need to do some model stuff
                 // this.game.pressedButtonAtIndex(buttonIndex);
+                event.stopPropagation();
                 fs.required = true;
                     const oldReqs = document.querySelector("#required");
                     const newReq = this._createItem(fs);
@@ -459,6 +476,7 @@ gung.FoodController = class {
             square.children[2].onclick = async (event) => {
                 // Prolly need to do some model stuff
                 // this.game.pressedButtonAtIndex(buttonIndex);
+                event.stopPropagation();
                 fs.banned = true;
                     const oldBans = document.querySelector("#banned");
                     const newBan = this._createItem(fs);
@@ -468,13 +486,18 @@ gung.FoodController = class {
                 await this.model.generateMeal();
             };
         }
-        square.addEventListener('click', () => {
-            number.innerText = Math.floor(Math.random() * 1000);
-            favDialog.showModal();
-        });
+        square.onclick = (event) => {
+            let food = fs.food.nutrition_details;
+            let nutrition = [food.calories.value,
+                food.fatContent.value,
+                food.carbohydrateContent.value,
+                food.proteinContent.value]; // k, f, c, p
+            this._showNutrition(nutrition);
+        }
     }
     _setUpDelete(item,fs) { // adds a delete click listener for a list item
         item.children[1].onclick = async (event) => {
+            event.stopPropagation();
             // Prolly need to do some model stuff
             // this.game.pressedButtonAtIndex(buttonIndex);
             const oldList = document.querySelector(`#${fs.banned?"banned":"required"}`); // Assumes banned if not required because in list
@@ -487,6 +510,27 @@ gung.FoodController = class {
             this.updateView();
             await this.model.generateMeal();
         };
+    }
+    _setUpPopup(item,fs) { // adds a popup click listener for a list item
+        item.children[1].onclick = (event) => {
+            event.stopPropagation();
+            let food = fs.food.nutrition_details;
+            let qty = fs.quantity;
+            let nutrition = [qty*food.calories.value,
+                qty*food.fatContent.value,
+                qty*food.carbohydrateContent.value,
+                qty*food.proteinContent.value]; // k, f, c, p
+            this._showNutrition(nutrition);
+        };
+    }
+    _showNutrition(nutrition) {
+        // number.innerText = Math.floor(Math.random() * 1000);
+        modalk.innerText = nutrition[0];
+        modalf.innerText = nutrition[1];
+        modalc.innerText = nutrition[2];
+        modalp.innerText = nutrition[3];
+        
+        favDialog.showModal();
     }
 }
 
@@ -519,6 +563,8 @@ gung.Model = class {
         this.protein = 20;
 
         this.plannedMeal = [];
+        this.bannedMeal = {};
+        this.requiredMeal = {};
     }
 
     /**
@@ -600,6 +646,57 @@ gung.Model = class {
 			this.board["f"+foods[property]["id"]] = new gung.FoodSquare(foods[property]);
 		}
     }
+    getBannedNutrition() {
+        let k = 0;
+        let f = 0;
+        let c = 0;
+        let p = 0;
+        for (const property in this.board) {
+            const fS = this.board[property]; // foodSquare
+            if (fS.banned) {
+                const cur = fS.food;
+                const qty = fS.quantity;
+                k += qty*(parseInt(cur["nutrition_details"]["calories"]["value"])?parseInt(cur["nutrition_details"]["calories"]["value"]):(10*9)+(10*4)+(10*4));
+                f += qty*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10);
+                c += qty*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
+                p += qty*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
+            }
+        }
+        return [k,f,c,p];
+    }
+    getRequiredNutrition() {
+        let k = 0;
+        let f = 0;
+        let c = 0;
+        let p = 0;
+        for (const property in this.board) {
+            const fS = this.board[property]; // foodSquare
+            if (fS.required) {
+                const cur = fS.food;
+                const qty = fS.quantity;
+                k += qty*(parseInt(cur["nutrition_details"]["calories"]["value"])?parseInt(cur["nutrition_details"]["calories"]["value"]):(10*9)+(10*4)+(10*4));
+                f += qty*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10);
+                c += qty*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
+                p += qty*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
+            }
+        }
+        return [k,f,c,p];
+    }
+    getPlannedNutrition() {
+        let k = 0;
+        let f = 0;
+        let c = 0;
+        let p = 0;
+        for (let i = 0; i < this.plannedMeal.length; i++) {
+            const cur = this.plannedMeal[i].food;
+            const qty = this.plannedMeal[i].quantity;
+            k += qty*(parseInt(cur["nutrition_details"]["calories"]["value"])?parseInt(cur["nutrition_details"]["calories"]["value"]):(10*9)+(10*4)+(10*4));
+            f += qty*(parseInt(cur["nutrition_details"]["fatContent"]["value"])?parseInt(cur["nutrition_details"]["fatContent"]["value"]):10)*9;
+            c += qty*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10)*4;
+            p += qty*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10)*4;
+        }
+        return [k,f,c,p];
+    }
     async generateMeal() {
         const resp = await fetch(`http://${gung.apiUrl}/${gung.generateMeal}/${this.vegetarian}/${this.vegan}/${this.glutenfree}/${this.calories}/${this.fat}/${this.carb}/${this.protein}`, {
             method: 'POST',
@@ -631,15 +728,6 @@ gung.main = function () {
         } else {
             res.send("success initializing page");
         }
-    });
-
-    const showNumber = document.getElementById('showNumber');
-    const favDialog = document.getElementById('favDialog');
-    const number = document.getElementById('number');
-
-    showNumber.addEventListener('click', () => {
-    number.innerText = Math.floor(Math.random() * 1000);
-    favDialog.showModal();
     });
 };
 

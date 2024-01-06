@@ -8,7 +8,7 @@
         // - Lel maybe I can just literally seed the alg for new random results every time (like giving certain foods a normally distributed weight value centered at 10 [or whatever the means of the current fat, carb, and protein sums in grams are] and distributed the same way)
             // Another seed to try first: - As I added on a second and third macronutrient to the constraint equations, it became clear that I needed to widen the lower and upper bounds (from working at 0.9 and 1.1 at first to 0.5 and 1.5 to 0.1 and 1.9, potentially pushing to 0 and >2.0 in the future idk)
             // - Figure out the mean and sd of current and previously valid seeds to reverse engineer (so all macro 'vars' arrays individually, pairwise, and all three)
-            
+
 console.log("Hello Bon");
 
 import OpenAI from "openai";
@@ -747,7 +747,7 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
     let menus:any = {};
     let meals:string[] = ["breakfast", "lunch", "dinner"];
     // Bon site TODO Update when doing future testing
-    let days:number[] = [0,13,14];
+    let days:number[] = [0,16,17];
     for (let i:number = 0; i <= 2; i++) {
          // Added so we get the days relative to the given day; we want multiple days data corresponding to a single day
          // https://stackoverflow.com/questions/39269701/typescript-trying-the-addition-of-two-variables-but-get-the-concatenation-of-t
