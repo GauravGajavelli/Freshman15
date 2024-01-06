@@ -67,6 +67,18 @@ body {
     font-size: 0.5em;
     border-radius: 10px;
 }
+.flex-item:hover {
+    background-color: #f1f1f1;
+}
+.artificial_nutrition:hover {
+    background-color: aquamarine;
+}
+.flex-item button:hover {
+    /* Do nothing */
+}
+.artificial_nutrition button:hover {
+    /* Do nothing */
+}
 .flex-item span {
     display: flex;
     text-align: center;

@@ -386,6 +386,7 @@ gung.FoodController = class {
             square.children[1].onclick = async (event) => {
                 // Prolly need to do some model stuff
                 // this.game.pressedButtonAtIndex(buttonIndex);
+                event.stopPropagation();
                 fs.banned = false;
                     const oldBans = document.querySelector("#banned");
                     const item = document.querySelector(`#banned #f${fs.food["id"]}`);
@@ -409,6 +410,7 @@ gung.FoodController = class {
             square.children[1].children[1].onclick = async (event) => {
                 // Prolly need to do some model stuff
                 // this.game.pressedButtonAtIndex(buttonIndex);
+                event.stopPropagation();
                 fs.required = false;
                     const oldReqs = document.querySelector("#required");
                     const item = document.querySelector(`#required #f${fs.food["id"]}`);
@@ -417,6 +419,7 @@ gung.FoodController = class {
                 await this.model.generateMeal();
             };
             square.children[1].children[0].children[0].onchange = async (event) => {
+                event.stopPropagation();
                 let val = square.children[1].children[0].children[0].value;
                 let newVal = val;
                 if (val < 1) {
@@ -465,6 +468,10 @@ gung.FoodController = class {
                 await this.model.generateMeal();
             };
         }
+        square.addEventListener('click', () => {
+            number.innerText = Math.floor(Math.random() * 1000);
+            favDialog.showModal();
+        });
     }
     _setUpDelete(item,fs) { // adds a delete click listener for a list item
         item.children[1].onclick = async (event) => {
@@ -624,6 +631,15 @@ gung.main = function () {
         } else {
             res.send("success initializing page");
         }
+    });
+
+    const showNumber = document.getElementById('showNumber');
+    const favDialog = document.getElementById('favDialog');
+    const number = document.getElementById('number');
+
+    showNumber.addEventListener('click', () => {
+    number.innerText = Math.floor(Math.random() * 1000);
+    favDialog.showModal();
     });
 };
 
