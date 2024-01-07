@@ -208,16 +208,20 @@ gung.FoodController = class {
     }
     clearChart() {
         // const oldOutput = document.querySelector(`#output`);
-        // oldOutput.innerHTML='';
-        // const chartHeader = gung.htmlToElement(`<h3>Macronutrient Ratios (%)</h3>`);
+        // // oldOutput.innerHTML='';
+        // // const chartHeader = gung.htmlToElement(`<h3>Macronutrient Ratios (%)</h3>`);
         // const newChart = gung.htmlToElement(`<canvas id="ratios"></canvas>`);
-        // oldOutput.append(chartHeader);
+        // const oldMonitor = document.querySelector(`.chartjs-size-monitor`);
+        // console.log("Horchata: "+newChart);
+        // // oldOutput.append(chartHeader);
+        // const oldChart = document.querySelector("#ratios"); 
+        // oldOutput.removeChild(oldMonitor);
+        // oldOutput.removeChild(oldChart);
         // oldOutput.append(newChart);
-        const oldChart = document.querySelector("#ratios"); 
-        if (oldChart) {
-            oldChart.data = {};
-            // oldChart.update();
-        }
+        // // if (oldChart) {
+        // //     oldChart.data = {};
+        // //     // oldChart.update();
+        // // }
     }
     updateList() {
             const bOption = gung.htmlToElement(`<option value="0">Breakfast</option>`);
@@ -284,7 +288,6 @@ gung.FoodController = class {
         // console.log("c: "+normalizedCarbohydrateCals);
         // console.log("p: "+normalizedProteinCals);
         
-        const ctx = document.getElementById('ratios');
         const xValues = ["Fat", "Protein", "Carbohydrates"];
         const yValues = [normalizedFatCals, normalizedProteinCals, normalizedCarbohydrateCals];
         const barColors = [
@@ -292,21 +295,39 @@ gung.FoodController = class {
             "#f95811",
             "#00ff00"
         ];
-        this.chart = new Chart(ctx, {
-            type: "doughnut",
-            data: {
-                labels: xValues,
-                datasets: [{
-                    backgroundColor: barColors,
-                    data: yValues
-                }]
-            },
-            options: {
-                interaction: {
-                    intersect:true
+        if (!this.chart) {
+            const ctx = document.getElementById('ratios');
+            this.chart = new Chart(ctx, {
+                type: "doughnut",
+                data: {
+                    labels: xValues,
+                    datasets: [{
+                        backgroundColor: barColors,
+                        data: yValues
+                    }]
+                },
+                options: {
+                    interaction: {
+                        intersect:true
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            this.chart.type = "doughnut";
+            this.chart.data = {
+                    labels: xValues,
+                    datasets: [{
+                        backgroundColor: barColors,
+                        data: yValues
+                    }]
+            };
+            this.chart.options = {
+                    interaction: {
+                        intersect:true
+                    }
+            };
+            this.chart.update();
+        }
     }
     setPlan(plannedMeal) {
         // plannedMeal is an array of FoodSquares representing meal items
@@ -519,7 +540,7 @@ gung.FoodController = class {
                 qty*food.fatContent.value,
                 qty*food.carbohydrateContent.value,
                 qty*food.proteinContent.value]; // k, f, c, p
-            this._showNutrition(nutrition, fs.food.label+(fs.food.quantity==1?"":" x "+fs.food.quantity));
+            this._showNutrition(nutrition, fs.food.label+(fs.quantity==1?"":" x "+fs.quantity));
         };
     }
     // Apparently you can query select for these by doing id.innerText, slick
