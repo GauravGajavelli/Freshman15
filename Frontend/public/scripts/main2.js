@@ -45,7 +45,7 @@ gung.FoodSquare = class {
     // Is updated by the model/view
     // Will have the click listeners
 gung.FoodController = class {
-	constructor(modelo) {
+	constructor(modelo,firstmeal) {
         this.model = modelo;
         // const foods = document.querySelectorAll("#foods .flex-item");
 		// for (const food of foods) {
@@ -66,7 +66,6 @@ gung.FoodController = class {
             this.updateList();
             this.updateView();
             this.clearItems();
-            this.clearChart();
             await this.model.generateMeal();
         };
 
@@ -78,7 +77,6 @@ gung.FoodController = class {
             // this.updateList(); No need to update list and reset to breakfast with every meal select
             this.updateView();
             this.clearItems();
-            this.clearChart();
             await this.model.generateMeal();
         };
 
@@ -176,13 +174,15 @@ gung.FoodController = class {
                 await this.model.generateMeal();
             }
         });
+        this.updateChart(firstmeal);
         this.updateList();
         this.updateView();
 	}
     static async makeController() {
         const model = await gung.Model.fetchModel();
+        let firstMeal = await model.generateMeal();
         // Invoke the private constructor...
-        let ctrlr = new gung.FoodController(model);
+        let ctrlr = new gung.FoodController(model,firstMeal);
         model.setController(ctrlr); // To enable two way communication
         return ctrlr;
     }
@@ -205,23 +205,6 @@ gung.FoodController = class {
         oldPlan.innerHTML='';
         const planHeader = gung.htmlToElement(`<h3>Planned Meal</h3>`);
 		oldPlan.append(planHeader);
-    }
-    clearChart() {
-        // const oldOutput = document.querySelector(`#output`);
-        // // oldOutput.innerHTML='';
-        // // const chartHeader = gung.htmlToElement(`<h3>Macronutrient Ratios (%)</h3>`);
-        // const newChart = gung.htmlToElement(`<canvas id="ratios"></canvas>`);
-        // const oldMonitor = document.querySelector(`.chartjs-size-monitor`);
-        // console.log("Horchata: "+newChart);
-        // // oldOutput.append(chartHeader);
-        // const oldChart = document.querySelector("#ratios"); 
-        // oldOutput.removeChild(oldMonitor);
-        // oldOutput.removeChild(oldChart);
-        // oldOutput.append(newChart);
-        // // if (oldChart) {
-        // //     oldChart.data = {};
-        // //     // oldChart.update();
-        // // }
     }
     updateList() {
             const bOption = gung.htmlToElement(`<option value="0">Breakfast</option>`);
@@ -730,7 +713,10 @@ gung.Model = class {
         const plannedMeal = await resp.json();
         // console.log(plannedMeal);
         this.plannedMeal = plannedMeal;
-        this.controller.setPlan(plannedMeal);
+        if (this.controller) {
+            this.controller.setPlan(plannedMeal);
+        }
+        return plannedMeal;
     }
 }
 
