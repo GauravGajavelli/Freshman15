@@ -175,6 +175,7 @@ gung.FoodController = class {
             }
         });
         this.updateChart(firstmeal);
+        this.setPlan(firstmeal);
         this.updateList();
         this.updateView();
 	}
@@ -312,6 +313,7 @@ gung.FoodController = class {
             this.chart.update();
         }
     }
+    // Creates all of the items for the plan
     setPlan(plannedMeal) {
         // plannedMeal is an array of FoodSquares representing meal items
         this.clearPlan();
@@ -715,6 +717,8 @@ gung.Model = class {
         this.plannedMeal = plannedMeal;
         if (this.controller) {
             this.controller.setPlan(plannedMeal);
+        } else {
+            // console.log("We gotta set the plan ourselves");
         }
         return plannedMeal;
     }
