@@ -208,23 +208,32 @@ gung.FoodController = class {
 		oldPlan.append(planHeader);
     }
     updateList() {
-            const bOption = gung.htmlToElement(`<option value="0">Breakfast</option>`);
-            const lOption = gung.htmlToElement(`<option value="1">Lunch</option>`);
-            const dOption = gung.htmlToElement(`<option value="2">Dinner</option>`);
-        let options = [bOption,lOption,dOption];
         let mealSelect = document.querySelector(`#meal-select`);
         let meals = this.model.getValidMeals();
         let mealnames = this.model.getMealNames();
-        for (let i = 0; i <= 2; i++) {
+        let options = this.makeOptions(mealnames);
+        for (let i = 0; i < mealnames.length; i++) {
             let curOption = document.querySelector(`#meal-select option[value='${i}']`);
             if (curOption) { // if it is had
-                curOption.parentElement.removeChild(curOption);
+                curOption.parentElement.removeChild(curOption); // always remove
             }
             if (meals[mealnames[i]]) { // if it should be had
                 mealSelect.append(options[i]);
             }
         }
     }
+    makeOptions(mealnames) {
+        let toRet = [];
+        for (let i = 0; i < mealnames.length; i++) {
+            let word = mealnames[i];
+            toRet.push(
+                gung.htmlToElement(`<option value="${i}">${word.charAt(0).toUpperCase()+word.slice(1)}</option>`
+                )
+            );
+        }
+        return toRet;
+    }
+
     updateBoard() {
         console.log("Updating view");
         // const food = document.querySelector("#fuwafuwa");
@@ -551,8 +560,8 @@ gung.Model = class {
 
         this.data = dayta; // gets the object
         this.board = {};
-        this.meals = ["breakfast", "lunch", "dinner"];
-        let foods = this.data.meals[this.curDay.toString()][this.meals[this.curMeal]];
+        let day = this.data.meals[this.curDay.toString()];
+        let foods = day[Object.keys(day)[this.curMeal]];
 		for (const property in foods) {
 			this.board["f"+foods[property]["id"]] = new gung.FoodSquare(foods[property]);
 		}
@@ -618,21 +627,21 @@ gung.Model = class {
     }
     toggleVegetarian(){
         this.vegetarian = !this.vegetarian;
-        // console.log("vegetarian: "+this.vegetarian);
+        console.log("vegetarian: "+this.vegetarian);
     }
     toggleVegan(){
         this.vegan = !this.vegan;
-        // console.log("vegan: "+this.vegan);
+        console.log("vegan: "+this.vegan);
     }
     toggleGlutenFree(){
         this.glutenfree = !this.glutenfree;
-        // console.log("glutenfree: "+this.glutenfree);
+        console.log("glutenfree: "+this.glutenfree);
     }
     getBoard() {
         return this.board;
     }
     getMealNames() {
-        return this.meals;
+        return Object.keys(this.data.validMeals[this.curDay.toString()]);
     }
     getValidMeals() {
         return this.data.validMeals[this.curDay.toString()];
@@ -646,7 +655,8 @@ gung.Model = class {
     }
     setMeal(meal) {
         this.curMeal = meal;
-        let foods = this.data.meals[this.curDay.toString()][this.meals[this.curMeal]];
+        let day = this.data.meals[this.curDay.toString()];
+        let foods = day[Object.keys(day)[this.curMeal]];
         this.board = {};
 		for (const property in foods) {
 			this.board["f"+foods[property]["id"]] = new gung.FoodSquare(foods[property]);

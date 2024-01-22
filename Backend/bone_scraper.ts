@@ -38,19 +38,13 @@ var puppeteer = require('puppeteer');
         Additional,
         Condiment
     }
-    enum meals {
-        Breakfast = 0,
-        Lunch,
-        Dinner,
-        Brunch
-    }
     type Food = {    
         "id": number,
         "label": string,
         "description": string,
         "short_name": string,
         "raw_cooked": number,
-        "meal":meals,
+        "meal":string,
         "tier":foodTier,
         "nutritionless":boolean,
         "artificial_nutrition":boolean,
@@ -98,12 +92,9 @@ var puppeteer = require('puppeteer');
             "unit": string
         }
     }
-    console.log(meals.Breakfast);
-    console.log(meals.Lunch);
-    console.log(meals.Dinner);
-    console.log(meals.Brunch);
+
     // Returns specific sections of courses
-    function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:meals,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean,v:boolean,ve:boolean,gf:boolean):Food {
+    function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:string,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean,v:boolean,ve:boolean,gf:boolean):Food {
         const nDetails: nutritionDetails = {
             calories: {
                 value: calories,
@@ -468,9 +459,9 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
     };
     if (use_int) {
         // calories["bnds"] = { type: glpk.GLP_DB, lb: k*0.9, ub: k*1.1 };
-        console.log("Saiki Gingko");
-        console.log("lower b: "+(k<=1000?k*0.7:k*0.5));
-        console.log("upper b: "+(k<=1000?k*0.9:k*0.7));
+        // console.log("Saiki Gingko");
+        // console.log("lower b: "+(k<=1000?k*0.7:k*0.5));
+        // console.log("upper b: "+(k<=1000?k*0.9:k*0.7));
         calories["bnds"] = { type: glpk.GLP_DB, lb: k<=1000?k*0.7:k*0.5, ub: k<=1000?k*0.9:k*0.7 } /** to account for using LPs and always rounding up */
     }
     let constraints:any = [];
@@ -555,7 +546,7 @@ function createOptions(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:numb
     // }
     return {
         // mipgap:1000,
-        msglev: glpk.GLP_MSG_ALL,
+        msglev: /*glpk.GLP_MSG_ALL*/glpk.GLP_MSG_OFF,
         // https://www.ibm.com/docs/en/icos/12.9.0?topic=parameters-relative-mip-gap-tolerance
             // Any number from 0.0 to 1.0; default: 1e-04.
             // 5% from optimal is good enough, but I'll make it rougher at first
@@ -564,11 +555,11 @@ function createOptions(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:numb
 }
 // TODO Get rid of default values once no longer applicable
 function solutionToFoods(solution:any,board:any):FoodSquare[] {
-    console.log("GENERATED MEAL: ");
+    // console.log("GENERATED MEAL: ");
     let toRet:any = [];
     let foods:any = Object.entries(solution.result.vars);
-    console.log("Solution worked?"+((solution.result.status==glpk.GLP_FEAS)||(solution.result.status==glpk.GLP_OPT)||(solution.result.status==glpk.GLP_UNBND)));
-    console.log("Solution didn't worked?"+((solution.result.status==glpk.GLP_UNDEF)||(solution.result.status==glpk.GLP_INFEAS)||(solution.result.status==glpk.GLP_NOFEAS)||(solution.result.status==glpk.GLP_UNBND)));
+    // console.log("Solution worked?"+((solution.result.status==glpk.GLP_FEAS)||(solution.result.status==glpk.GLP_OPT)||(solution.result.status==glpk.GLP_UNBND)));
+    // console.log("Solution didn't worked?"+((solution.result.status==glpk.GLP_UNDEF)||(solution.result.status==glpk.GLP_INFEAS)||(solution.result.status==glpk.GLP_NOFEAS)||(solution.result.status==glpk.GLP_UNBND)));
     let k:number = 0;
     let f:number = 0;
     let c:number = 0;
@@ -601,10 +592,10 @@ function solutionToFoods(solution:any,board:any):FoodSquare[] {
         c1 += foods[i][1]*(parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"])?parseInt(cur["nutrition_details"]["carbohydrateContent"]["value"]):10);
         p1 += foods[i][1]*(parseInt(cur["nutrition_details"]["proteinContent"]["value"])?parseInt(cur["nutrition_details"]["proteinContent"]["value"]):10);
     }
-    console.log("Calories (Predicted): "+k1);
-    console.log(`f: ${f1}, c: ${c1}, p: ${p1}`);
-    console.log("Calories (Actual): "+k);
-    console.log(`f: ${f}, c: ${c}, p: ${p}`);
+    // console.log("Calories (Predicted): "+k1);
+    // console.log(`f: ${f1}, c: ${c1}, p: ${p1}`);
+    // console.log("Calories (Actual): "+k);
+    // console.log(`f: ${f}, c: ${c}, p: ${p}`);
     return toRet;
 }
 function isVegetarian(food: any):boolean {
@@ -667,8 +658,8 @@ async function bonSiteUp():Promise<string> {
 // Returns a list of foods from the site daysAgo number of days ago
 // NOTE: Only call after you've downloaded menu
 // Chosen is an array of valid meal indices
-async function getMeal(page:any,chosen:meals,meals:string[],menu:any):Promise<Food[]> {
-    await page.screenshot({path: 'files/screenshot1.png'});
+async function getMeal(page:any,chosen:number,meals:string[],menu:any):Promise<Food[]> {
+    // await page.screenshot({path: 'files/screenshot1.png'});
 
     let toRet:Food[] = [];
     // Make sure to get from all meals and also from all food tiers
@@ -681,21 +672,20 @@ async function getMeal(page:any,chosen:meals,meals:string[],menu:any):Promise<Fo
     // document.querySelector("#breakfast .site-panel__daypart-tabs [data-key-index='0'] .h4")
     let mealstrings:Set<string> = new Set<string>();
     mealstrings.add(meals[chosen]);
-    console.log("Meals: "+meals[chosen]);
     for (let i:number = 0; i < meals.length; i++) {
         let mealstr = meals[i];
         if (mealstrings.has(mealstr)) { // if it's one of the meals specified
-            await getFoods(page, i,foodTier.Special, toRet,menu);
-            await getFoods(page, i,foodTier.Additional, toRet,menu);
-            await getFoods(page, i,foodTier.Condiment, toRet,menu);
+            console.log("Meals: "+mealstr);
+            await getFoods(page, i,meals,foodTier.Special, toRet,menu);
+            await getFoods(page, i,meals,foodTier.Additional, toRet,menu);
+            await getFoods(page, i,meals,foodTier.Condiment, toRet,menu);
         }
     }
     return toRet;
 }
 // TODO Get the v,ve,gf status of all foods
 // Pass in a page with foods to get
-async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any):Promise<void> {
-    let meals:string[] = ["breakfast", "lunch", "dinner"];
+async function getFoods(page:any,meal:number,meals:string[],tier:foodTier,toRet:Food[],menu:any):Promise<void> {
     const nn = await page.$$("#"+meals[meal]+" .site-panel__daypart-tabs [data-key-index='"+tier+"'] .h4"); // all foods in the meal
     for (let i = 0; i < nn.length; i++) {
         const id = ( await page.evaluate((el: { getAttribute: (arg0: string) => any; }) => el.getAttribute("data-id"), nn[i]));
@@ -715,9 +705,9 @@ async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any)
             const gf = ("cor_icon" in menu[id]) && ("9" in menu[id]["cor_icon"]);
             // the front end should also recoil in horror, separately
                 // There should be a strikethrough /graying out of any non-veg in reqs or general list
-            toRet.push(food_factory(id,name,calories,carbs,rote,phat,meal,tier,servingSize,servingUnits,false,v,ve,gf));
+            toRet.push(food_factory(id,name,calories,carbs,rote,phat,meals[meal],tier,servingSize,servingUnits,false,v,ve,gf));
         } else {
-            toRet.push(food_factory(id,name,0,0,0,0,meal,tier,0,"",true,true,false,false)); // Southwest Beef Bowl case
+            toRet.push(food_factory(id,name,0,0,0,0,meals[meal],tier,0,"",true,true,false,false)); // Southwest Beef Bowl case
         }
     }
 }
@@ -807,8 +797,9 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
             toRet["validMeals"][daysAgo] = {};
             toRet["meals"][daysAgo] = {};
             menus[daysAgo] = await JSON.parse(await getMenu(page));
-            for (let meal = 0; meal <= meals.length; meal++) {
+            for (let meal = 0; meal < meals.length; meal++) {
                 toRet["validMeals"][daysAgo][meals[meal]] = !(!(await page.$("#"+meals[meal]))); // valid meal
+                // console.log("#meal"+meal);
                 if (toRet["validMeals"][daysAgo][meals[meal]]) {
                     toRet["meals"][daysAgo][meals[meal]] = await getMeal(page,meal,meals,menus[daysAgo]); // NEVER FORGET AN AWAIT FML
                 } else {
@@ -819,7 +810,7 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
             menus[daysAgo] = {};
             toRet["validMeals"][daysAgo] = {};
             toRet["meals"][daysAgo] = {};
-            for (let meal = 0; meal <= meals.length; meal++) { // invalid meals
+            for (let meal = 0; meal < meals.length; meal++) { // invalid meals
                 toRet["validMeals"][daysAgo][meals[meal]] = false;
                 toRet["meals"][daysAgo][meals[meal]] = {};
             }
@@ -1063,7 +1054,7 @@ router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cr
         0.1, // +-lenience in macro ratios
         false); // returns an array of the foods
     for (let leniency = 0.1; leniency <= 1.5 && meal.length == 0; leniency += 0.1) {
-        console.log("Cur Lenience: "+leniency);
+        // console.log("Cur Lenience: "+leniency);
         meal = await generateMeal(board,
             vegetarian==="true",
             vegan==="true",
