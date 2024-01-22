@@ -11,6 +11,7 @@
 
 console.log("Hello Bon");
 
+
 import OpenAI from "openai";
 var express = require('express');
 var router = express.Router();
@@ -30,74 +31,82 @@ var puppeteer = require('puppeteer');
 // This gives a more specific breakdown of the nutrition of each item for the day (json with all foods): 
 // scripts = soup.find_all("script", string=re.compile(r"Bamco\.dayparts"))
 // menuitems = soup.find_all(
-//     "script", string=re.compile(r"Bamco\.menu_items"))
-const archivedBonSite = "files/old_bon_site.html";
-enum foodTier {
-    Special = 0,
-    Additional,
-    Condiment
-}
-enum meals {
-    Breakfast = 0,
-    Lunch,
-    Dinner 
-}
-type Food = {    
-    "id": number,
-    "label": string,
-    "description": string,
-    "short_name": string,
-    "raw_cooked": number,
-    "meal":meals,
-    "tier":foodTier,
-    "nutritionless":boolean,
-    "artificial_nutrition":boolean,
-    "nutrition": {
-        "kcal": number,
-        "well_being": number,
-    },
-    "station_id": number,
-    "station": string,
-    "nutrition_details": nutritionDetails,
-    "ingredients": string[],
-    "sub_station_id": number,
-    "sub_station": string,
-    "sub_station_order": number,
-    "monotony": {}
-}
-type FoodSquare = {
-    food:any, /* Would be Food type, but string stuff */
-    required:boolean,
-    banned:boolean,
-    quantity:number
-}
-type nutritionDetails = {
-    "calories": {
-    "value": number,
-    "unit": string
-    },
-    "servingSize": {
-    "value": number,
-    "unit": string
-    },
-    "fatContent": {
-    "value": number,
-    "unit": string
-    },
-    "carbohydrateContent": {
-    "value": number,
-    "unit": string
-    },
-    "proteinContent": {
-    "value": number,
-    "unit": string
+    //     "script", string=re.compile(r"Bamco\.menu_items"))
+    const archivedBonSite = "files/old_bon_site.html";
+    enum foodTier {
+        Special = 0,
+        Additional,
+        Condiment
     }
-}
-// Returns specific sections of courses
-function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:meals,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean):Food {
-    const nDetails: nutritionDetails = {
-        calories: {
-        value: calories,
+    enum meals {
+        Breakfast = 0,
+        Lunch,
+        Dinner,
+        Brunch
+    }
+    type Food = {    
+        "id": number,
+        "label": string,
+        "description": string,
+        "short_name": string,
+        "raw_cooked": number,
+        "meal":meals,
+        "tier":foodTier,
+        "nutritionless":boolean,
+        "artificial_nutrition":boolean,
+        "nutrition": {
+            "kcal": number,
+            "well_being": number,
+        },
+        "vegetarian":boolean,
+        "vegan":boolean,
+        "glutenfree":boolean,
+        "station_id": number,
+        "station": string,
+        "nutrition_details": nutritionDetails,
+        "ingredients": string[],
+        "sub_station_id": number,
+        "sub_station": string,
+        "sub_station_order": number,
+        "monotony": {}
+    }
+    type FoodSquare = {
+        food:any, /* Would be Food type, but string stuff */
+        required:boolean,
+        banned:boolean,
+        quantity:number
+    }
+    type nutritionDetails = {
+        "calories": {
+            "value": number,
+            "unit": string
+        },
+        "servingSize": {
+            "value": number,
+            "unit": string
+        },
+        "fatContent": {
+            "value": number,
+            "unit": string
+        },
+        "carbohydrateContent": {
+            "value": number,
+            "unit": string
+        },
+        "proteinContent": {
+            "value": number,
+            "unit": string
+        }
+    }
+    console.log(meals.Breakfast);
+    console.log(meals.Lunch);
+    console.log(meals.Dinner);
+    console.log(meals.Brunch);
+    // Returns specific sections of courses
+    function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:meals,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean,v:boolean,ve:boolean,gf:boolean):Food {
+        const nDetails: nutritionDetails = {
+            calories: {
+                value: calories,
         unit: "string"
         },
         servingSize: {
@@ -138,7 +147,10 @@ function food_factory (id: number, name: string, calories:number, carbs: number,
         sub_station_id: 1010101,
         sub_station: "string",
         sub_station_order: 1010101,
-        monotony: {}
+        monotony: {},
+        vegetarian:v,
+        vegan:ve,
+        glutenfree:gf
     };
     return toRet;
 }
@@ -241,7 +253,7 @@ function research(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:
         if (fS.food["tier"] == 0) {
             toRet.push({ name: id, coef: 1.0});
         }
-        if (fS.food["tier"] == 2) {
+        if (fS.food["tier"] == 2 || (v && !isVegetarian(fs.food)) || (ve && !isVegan(fs.food)) || (gf && !isGlutenFree(fs.food))) {
             toRet.push({ name: id, coef: -10});
         }
     }
@@ -260,7 +272,7 @@ function createObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:nu
                 // Like with boolean variables
             // I could try optimizing by having the foods chosen be from the fewest number of stations possible
                 // Objective could be then minimizing the sets of boolean variables representing different stations
-            // Chat-GPT generated parameters for every food, eg crunchiness or sweet/salt to make it more palatable than the apparently ridiculed stigler diet
+            // ChatGPT generated parameters for every food, eg crunchiness or sweet/salt to make it more palatable than the apparently ridiculed stigler diet
     // Going with the simplest objective: 
         // Well the cost of all of the items would've been their frequencies added up since they were all normalized to quantities that had the same price
         // Since our normalized price is free, I'd say our objective would simply be to maximize z = 0*f1+0*f2+0*f3+... = 0
@@ -595,6 +607,19 @@ function solutionToFoods(solution:any,board:any):FoodSquare[] {
     console.log(`f: ${f}, c: ${c}, p: ${p}`);
     return toRet;
 }
+function isVegetarian(food: any):boolean {
+    throw new Error("Function not implemented.");
+}
+
+function isVegan(food: any):boolean {
+    throw new Error("Function not implemented.");
+}
+
+function isGlutenFree(food: any):boolean {
+    throw new Error("Function not implemented.");
+}
+
+
 // Leniency is the degree to which we're willing to fudge constraints
     // Only one to keep things simple and bounds symmetric
 async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,leniency:number,use_int:boolean):Promise<FoodSquare[]> {
@@ -642,7 +667,7 @@ async function bonSiteUp():Promise<string> {
 // Returns a list of foods from the site daysAgo number of days ago
 // NOTE: Only call after you've downloaded menu
 // Chosen is an array of valid meal indices
-async function getMeal(page:any,chosen:meals,menu:any):Promise<Food[]> {
+async function getMeal(page:any,chosen:meals,meals:string[],menu:any):Promise<Food[]> {
     await page.screenshot({path: 'files/screenshot1.png'});
 
     let toRet:Food[] = [];
@@ -654,7 +679,6 @@ async function getMeal(page:any,chosen:meals,menu:any):Promise<Food[]> {
     // Good for double-checking overall "#breakfast .script", has an array of all food IDs in meal
 
     // document.querySelector("#breakfast .site-panel__daypart-tabs [data-key-index='0'] .h4")
-    let meals:string[] = ["breakfast", "lunch", "dinner"];
     let mealstrings:Set<string> = new Set<string>();
     mealstrings.add(meals[chosen]);
     console.log("Meals: "+meals[chosen]);
@@ -674,7 +698,6 @@ async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any)
     let meals:string[] = ["breakfast", "lunch", "dinner"];
     const nn = await page.$$("#"+meals[meal]+" .site-panel__daypart-tabs [data-key-index='"+tier+"'] .h4"); // all foods in the meal
     for (let i = 0; i < nn.length; i++) {
-        // function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, tear:foodTier, servingSize:number,servingUnits:string):Food {
         const id = ( await page.evaluate((el: { getAttribute: (arg0: string) => any; }) => el.getAttribute("data-id"), nn[i]));
         // console.log("data id: "+id);
         const name = menu[id]["label"];
@@ -687,9 +710,14 @@ async function getFoods(page:any,meal:meals,tier:foodTier,toRet:Food[],menu:any)
             const phat = menu[id]["nutrition_details"]["fatContent"]["value"];
             const servingSize = menu[id]["nutrition_details"]["servingSize"]["value"];
             const servingUnits = menu[id]["nutrition_details"]["servingSize"]["unit"];
-            toRet.push(food_factory(id,name,calories,carbs,rote,phat,meal,tier,servingSize,servingUnits,false));
+            const v = ("cor_icon" in menu[id]) && ("1" in menu[id]["cor_icon"]); // if there is no cor_icon then consider using gpt-ing, but prlly good enough to assume meat
+            const ve = ("cor_icon" in menu[id]) && ("4" in menu[id]["cor_icon"]); // may be subject to update
+            const gf = ("cor_icon" in menu[id]) && ("9" in menu[id]["cor_icon"]);
+            // the front end should also recoil in horror, separately
+                // There should be a strikethrough /graying out of any non-veg in reqs or general list
+            toRet.push(food_factory(id,name,calories,carbs,rote,phat,meal,tier,servingSize,servingUnits,false,v,ve,gf));
         } else {
-            toRet.push(food_factory(id,name,0,0,0,0,meal,tier,0,"",true)); // Southwest Beef Bowl case
+            toRet.push(food_factory(id,name,0,0,0,0,meal,tier,0,"",true,true,false,false)); // Southwest Beef Bowl case
         }
     }
 }
@@ -744,14 +772,27 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
     toRet["validMeals"] = {};
     toRet["meals"] = {};
     // toRet["menus"] = {}; //so we don't include in the written json
+
     let menus:any = {};
-    let meals:string[] = ["breakfast", "lunch", "dinner"];
+    let meals:string[] = [];
+    
     // Bon site TODO Update when doing future testing
-    let days:number[] = [0,16,17];
+    let days:number[] = [0,1,-1];
     for (let i:number = 0; i <= 2; i++) {
-         // Added so we get the days relative to the given day; we want multiple days data corresponding to a single day
-         // https://stackoverflow.com/questions/39269701/typescript-trying-the-addition-of-two-variables-but-get-the-concatenation-of-t
+        // Added so we get the days relative to the given day; we want multiple days data corresponding to a single day
+        // https://stackoverflow.com/questions/39269701/typescript-trying-the-addition-of-two-variables-but-get-the-concatenation-of-t
         let daysAgo:number = +days[i] + +daysOffset;
+        let val:any = DateTime.now().minus({ days: daysAgo });
+
+        let dayOfWeek:number = val.weekday;
+        if (1 <= dayOfWeek && dayOfWeek <= 5) {// m-f
+            meals = ["breakfast", "lunch", "dinner"];
+        } else if (dayOfWeek == 6) { // saturday
+            meals = ["brunch"];
+        } else if (dayOfWeek == 7) { // sunday
+            meals = ["brunch", "dinner"];
+        }
+
         // puppeteering
         const browser = await puppeteer.launch({headless: "new"});
         const page = await browser.newPage();
@@ -766,11 +807,10 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
             toRet["validMeals"][daysAgo] = {};
             toRet["meals"][daysAgo] = {};
             menus[daysAgo] = await JSON.parse(await getMenu(page));
-            for (let meal = 0; meal <= 2; meal++) {
+            for (let meal = 0; meal <= meals.length; meal++) {
                 toRet["validMeals"][daysAgo][meals[meal]] = !(!(await page.$("#"+meals[meal]))); // valid meal
                 if (toRet["validMeals"][daysAgo][meals[meal]]) {
-                    console.log("Goethe was smartest, for sure");
-                    toRet["meals"][daysAgo][meals[meal]] = await getMeal(page,meal,menus[daysAgo]); // NEVER FORGET AN AWAIT FML
+                    toRet["meals"][daysAgo][meals[meal]] = await getMeal(page,meal,meals,menus[daysAgo]); // NEVER FORGET AN AWAIT FML
                 } else {
                     toRet["meals"][daysAgo][meals[meal]] = {};
                 }
@@ -779,7 +819,7 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
             menus[daysAgo] = {};
             toRet["validMeals"][daysAgo] = {};
             toRet["meals"][daysAgo] = {};
-            for (let meal = 0; meal <= 2; meal++) { // invalid meals
+            for (let meal = 0; meal <= meals.length; meal++) { // invalid meals
                 toRet["validMeals"][daysAgo][meals[meal]] = false;
                 toRet["meals"][daysAgo][meals[meal]] = {};
             }
@@ -989,6 +1029,10 @@ async function mergeArtificialData(toWrite:any,daysAgo:number):Promise<any> {
                 // I don't actually have to do that, I just thought of it and that should be fine for this case
     // Circular reference error when writing object to json
         // It's not js magic, I actually just had a jank line where I set the id parameter of an object to itself
+    // Should I ban foods for veg/vegan through the front or the back end?
+        // Front end, because people may have carry-over sessions from previous days and this way we don't have to have the food data for every possible day on the back end
+    // Brunch not loading
+        // use datetime.weekday and check for 6 (brunch only) and 7 (brunch and dinner)
 // Create
 router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cratio/:pratio/', async function(req:any, res:any) {
     // gung.FoodSquare = class {
