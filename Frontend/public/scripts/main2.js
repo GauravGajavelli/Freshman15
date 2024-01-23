@@ -98,12 +98,15 @@ gung.FoodController = class {
         
         document.querySelector("#vegetarian").onchange = async (event) => {
             this.model.toggleVegetarian();
+            await this.model.generateMeal();
         }
         document.querySelector("#vegan").onchange = async (event) => {
             this.model.toggleVegan();
+            await this.model.generateMeal();
         }
         document.querySelector("#glutenfree").onchange = async (event) => {
             this.model.toggleGlutenFree();
+            await this.model.generateMeal();
         }
 
         document.querySelector("#calories").onchange = async (event) => {

@@ -244,12 +244,7 @@ function research(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:
         if (fS.food["tier"] == 0) {
             toRet.push({ name: id, coef: 1.0});
         }
-        // console.log("vegetarian: "+v);
-        // console.log("vegan: "+ve);
-        // console.log("gluten free: "+gf);
-        console.log("fooed veg?: "+fS.food.vegetarian);
-        console.log("name: "+fS.food.label);
-        if (fS.food["tier"] == 2 || (v && !(fS.food.vegetarian)) || (ve && !(fS.food.vegan)) || (gf && !(fS.food.glutenfree))) {
+        if (fS.food["tier"] == 2) {
             toRet.push({ name: id, coef: -10});
         }
     }
@@ -415,7 +410,7 @@ function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):an
     let toRet:any = [];
     for (const id in board) {
         const fS = board[id]; // foodSquare
-        if (fS.banned || fS.food["tier"] == 1 /* add in dietary restrictions */) { // lets keep condiments out of meal generation for now, can fix later
+        if (fS.banned || fS.food["tier"] == 1  || (v && !(fS.food.vegetarian)) || (ve && !(fS.food.vegan)) || (gf && !(fS.food.glutenfree))) { // lets keep condiments out of meal generation for now, can fix later
             toRet.push(
                 {
                     name: fS.food["label"],
@@ -693,9 +688,20 @@ async function getFoods(page:any,meal:number,meals:string[],tier:foodTier,toRet:
             const phat = menu[id]["nutrition_details"]["fatContent"]["value"];
             const servingSize = menu[id]["nutrition_details"]["servingSize"]["value"];
             const servingUnits = menu[id]["nutrition_details"]["servingSize"]["unit"];
+            
             const v = ("cor_icon" in menu[id]) && ("1" in menu[id]["cor_icon"]); // if there is no cor_icon then consider using gpt-ing, but prlly good enough to assume meat
             const ve = ("cor_icon" in menu[id]) && ("4" in menu[id]["cor_icon"]); // may be subject to update
             const gf = ("cor_icon" in menu[id]) && ("9" in menu[id]["cor_icon"]);
+
+            if (name.includes("tuscan chicken and kale stew")) {
+                console.log("tuscan food: "+name);
+                console.log("fooed veg?: "+(("cor_icon" in menu[id]) && ("1" in menu[id]["cor_icon"])));
+
+                console.log("vegetarian: "+v);
+                console.log("vegan: "+ve);
+                console.log("gluten free: "+gf);
+            }
+
             // the front end should also recoil in horror, separately
                 // There should be a strikethrough /graying out of any non-veg in reqs or general list
             toRet.push(food_factory(id,name,calories,carbs,rote,phat,meals[meal],tier,servingSize,servingUnits,false,v,ve,gf));
