@@ -244,7 +244,12 @@ function research(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:
         if (fS.food["tier"] == 0) {
             toRet.push({ name: id, coef: 1.0});
         }
-        if (fS.food["tier"] == 2 || (v && !isVegetarian(fs.food)) || (ve && !isVegan(fs.food)) || (gf && !isGlutenFree(fs.food))) {
+        // console.log("vegetarian: "+v);
+        // console.log("vegan: "+ve);
+        // console.log("gluten free: "+gf);
+        console.log("fooed veg?: "+fS.food.vegetarian);
+        console.log("name: "+fS.food.label);
+        if (fS.food["tier"] == 2 || (v && !(fS.food.vegetarian)) || (ve && !(fS.food.vegan)) || (gf && !(fS.food.glutenfree))) {
             toRet.push({ name: id, coef: -10});
         }
     }
@@ -598,18 +603,6 @@ function solutionToFoods(solution:any,board:any):FoodSquare[] {
     // console.log(`f: ${f}, c: ${c}, p: ${p}`);
     return toRet;
 }
-function isVegetarian(food: any):boolean {
-    throw new Error("Function not implemented.");
-}
-
-function isVegan(food: any):boolean {
-    throw new Error("Function not implemented.");
-}
-
-function isGlutenFree(food: any):boolean {
-    throw new Error("Function not implemented.");
-}
-
 
 // Leniency is the degree to which we're willing to fudge constraints
     // Only one to keep things simple and bounds symmetric
