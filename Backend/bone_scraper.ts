@@ -410,7 +410,10 @@ function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):an
     let toRet:any = [];
     for (const id in board) {
         const fS = board[id]; // foodSquare
-        if (fS.banned || fS.food["tier"] == 1  || (v && !(fS.food.vegetarian)) || (ve && !(fS.food.vegan)) || (gf && !(fS.food.glutenfree))) { // lets keep condiments out of meal generation for now, can fix later
+        if (v && ve) {
+            v = false; // vegan will be both, looks like they don't always reflect this
+        }
+        if (fS.banned || fS.food["tier"] == 1  || (v && !(fS.food.vegetarian || fS.food.vegan)) || (ve && !(fS.food.vegan)) || (gf && !(fS.food.glutenfree))) { // lets keep condiments out of meal generation for now, can fix later
             toRet.push(
                 {
                     name: fS.food["label"],
