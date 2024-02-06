@@ -1,21 +1,60 @@
-var path = require('path');
+var Connection = require('tedious').Connection;
+var Request = require('tedious').Request;
 
-// configuration here. See the Configuration section
-var configuration = {
-    migrationsDir: path.resolve(__dirname, 'migrations'), // This is the directory that should contain your SQL migrations.
-    host: 'localhost', // Database host
-    port: 5432, // Database port
-    db: 'sql_migrations', // Database name
-    user: 'dabramov', // Database username
-    password: 'password', // Database password
-    adapter: 'pg', // Database adapter: pg, mysql
-    // Parameters are optional. If you provide them then any occurrences of the parameter (i.e. FOO) in the SQL scripts will be replaced by the value (i.e. bar).
-    parameters: {
-        "FOO": "bar"
-    },
-    minMigrationTime: new Date('2018-01-01').getTime() // Optional. Skip migrations before this before this time.
+var config = {
+  server: 'myrdstest2.cz28u42qg4rv.us-east-1.rds.amazonaws.com',
+  authentication: {
+    type: 'default',
+    options: {
+      userName: 'admin',
+      password: 'TODOINSERTPASSWORD'
+    }
+  },
+  options: {
+    port: 1433 // Default Port
+  }
 };
 
-require('sql-migrations').run({
-    
+const connection = new Connection(config);
+
+connection.connect((err) => {
+  if (err) {
+    console.log('Connection Failed');
+    throw err;
+  }
+
+  executeStatement();
 });
+
+function executeStatement() {
+  const request = new Request('select * from Users', (err, rowCount) => {
+    if (err) {
+      throw err;
+    }
+
+    console.log('DONE!');
+    connection.close();
+  });
+
+  // Emits a 'DoneInProc' event when completed.
+  request.on('row', (columns) => {
+    columns.forEach((column) => {
+      if (column.value === null) {
+        console.log('NULL');
+      } else {
+        console.log(column.value);
+      }
+    });
+  });
+
+  request.on('done', (rowCount) => {
+    console.log('Done is called!');
+  });
+
+  request.on('doneInProc', (rowCount, more) => {
+    console.log(rowCount + ' rows returned');
+  });
+
+  // In SQL Server 2000 you may need: connection.execSqlBatch(request);
+  connection.execSql(request);
+}
