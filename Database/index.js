@@ -7,10 +7,12 @@ var config = {
     type: 'default',
     options: {
       userName: 'admin',
-      password: 'TODOINSERTPASSWORD'
+      password: 'EvilMonster',
     }
-  },
-  options: {
+},
+options: {
+      encrypt: false,
+      database:'Freshman15',
     port: 1433 // Default Port
   }
 };
@@ -25,6 +27,10 @@ connection.connect((err) => {
 
   executeStatement();
 });
+
+connection.on('debug', function(text) {
+    console.log(text)
+  });
 
 function executeStatement() {
   const request = new Request('select * from Users', (err, rowCount) => {

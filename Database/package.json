@@ -12,6 +12,6 @@
     "db-migrate": "^0.11.14",
     "path": "^0.12.7",
     "sql-migrations": "^1.0.7",
-    "tedious": "^16.6.1"
+    "tedious": "^16.7.0"
   }
 }
