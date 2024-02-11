@@ -1,21 +1,8 @@
 var Connection = require('tedious').Connection;
 var Request = require('tedious').Request;
+const fs = require("fs");
 
-var config = {
-  server: 'myrdstest2.cz28u42qg4rv.us-east-1.rds.amazonaws.com',
-  authentication: {
-    type: 'default',
-    options: {
-      userName: 'admin',
-      password: 'EvilMonster',
-    }
-},
-options: {
-      encrypt: false,
-      database:'Freshman15',
-    port: 1433 // Default Port
-  }
-};
+var config = JSON.parse(fs.readFileSync("connectivity_config.json"));
 
 const connection = new Connection(config);
 

@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "db-migrate": "^0.11.14",
+    "fs": "^0.0.1-security",
     "path": "^0.12.7",
     "sql-migrations": "^1.0.7",
     "tedious": "^16.7.0"
