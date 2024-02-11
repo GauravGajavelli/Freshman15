@@ -8,12 +8,6 @@ CREATE TABLE Users (
   Username VARCHAR(10) NOT NULL UNIQUE,
   [Password] VARCHAR(50) NOT NULL,
   [Year] varchar(30) NOT NULL,
+  Check ([year] in ('Freshman','Sophomore','Junior','Senior','Graduate'))
 )
 
-Alter table users
-add check ([year] in ('Freshman','Sophomore','Junior','Senior','Graduate'))
-
-select * from users
-
-insert into users VALUES
-('Gaurav','Gajavelli','CS','gajavegs','hmm','Sophomore')

@@ -22,6 +22,8 @@ const glpk = GLPK();
 const openai = new OpenAI();
 
 var puppeteer = require('puppeteer');
+var Connection = require('tedious').Connection;
+var Request = require('tedious').Request;
 
 // https://legacy.cafebonappetit.com/print-menu/cafe/1374/menu/463779/days/today/pgbrks/1/
 // This gives an easily parsible overview of the key foods of the day
