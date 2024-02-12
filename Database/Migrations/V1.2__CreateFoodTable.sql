@@ -1,4 +1,5 @@
-
+USE [Freshman15]
+GO
 CREATE TABLE Food (
   [ID] INT NOT NULL PRIMARY KEY,
   [Name] VARCHAR(35) NOT NULL,
@@ -7,14 +8,15 @@ CREATE TABLE Food (
   Protein SMALLINT NULL,
   Fat SMALLINT NULL,
   Tier TINYINT NOT NULL,
-  ServingSize INT NULL,
+  ServingSize SMALLINT NULL,
   ServingUnits VARCHAR(35) NULL,
-  Nutritionless BINARY(1) NULL,
-  Vegetarian BINARY(1) NULL,
-  Vegan BINARY(1) NULL,
-  GlutenFree BINARY(1) NULL,
-  Meal NVARCHAR(10) NOT NULL,
-  [Day] Date NOT NULL
+  Nutritionless BIT NULL,
+  Vegetarian BIT NULL,
+  Vegan BIT NULL,
+  GlutenFree BIT NULL,
+  ArtificialNutrition BIT NULL,
+  Meal VARCHAR(10) NULL,
+  [Day] DATE NULL
 )
 
 -- Specifying schema of table for insert at allows you to only insert with some fields not null 
