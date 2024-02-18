@@ -20,10 +20,10 @@ const { DateTime } = require("luxon");
 const GLPK = require('glpk.js');
 const glpk = GLPK();
 const openai = new OpenAI();
-
-var puppeteer = require('puppeteer');
 var Connection = require('tedious').Connection;
 var Request = require('tedious').Request;
+
+var puppeteer = require('puppeteer');
 
 // https://legacy.cafebonappetit.com/print-menu/cafe/1374/menu/463779/days/today/pgbrks/1/
 // This gives an easily parsible overview of the key foods of the day
@@ -644,7 +644,7 @@ async function bonSiteUp():Promise<string> {
     await page.goto(bonSite(0), { timeout: 30000 } );
 
     // Inputting username/password
-    await page.screenshot({path: 'files/screenshot0.png'});
+    // await page.screenshot({path: 'files/screenshot0.png'});
     let content = await page.content();
     return content.toString().substring(2000,4000);
 }
@@ -719,7 +719,7 @@ async function getFoods(page:any,meal:number,meals:string[],tier:foodTier,toRet:
 // ASSUMPTION: the idea of getting the menu from days ago (and this does matter, as the IDs shift), hinges on them having giving us consistent menu IDs within each day's site
 // Returns an object with the menu with strings from the site daysAgo number of days ago
 async function getMenu(page:any):Promise<string> {
-    await page.screenshot({path: 'files/screenshot1.png'});
+    // await page.screenshot({path: 'files/screenshot1.png'});
 
     // script containing the menu json
     let script = 
@@ -729,7 +729,7 @@ async function getMenu(page:any):Promise<string> {
         ).jsonValue(); // document.querySelector(".panels-collection script").innerText
 
     // Literally just the substring past Bamco.menu_items to Bamco.cor_icons
-    let startDex = script.indexOf("Bamco.menu_items")+"Bamco.menu_items".length+3;
+    let startDex = script.indexOf("Bamco.menu_items = ")+"Bamco.menu_items = ".length;
     let endDex = script.indexOf("Bamco.cor_icons")-6;
     return script.substring(startDex,endDex);
 }

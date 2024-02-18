@@ -57,6 +57,9 @@ function importFood(food, day, meal, connection, num) {
       connection.close();
     });
 
+    food.nutrition_details.calories.value = parseFloat(food.nutrition_details.calories.value)
+                                                        ?parseFloat(food.nutrition_details.calories.value):
+                                                        "0.5";
     food.nutrition_details.carbohydrateContent.value = parseFloat(food.nutrition_details.carbohydrateContent.value)
                                                         ?parseFloat(food.nutrition_details.carbohydrateContent.value):
                                                         "0.5";

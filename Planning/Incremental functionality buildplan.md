@@ -1,0 +1,23 @@
+Incremental functionality buildplan (talk abt this since I'm having to do this as I come up with new ideas that add. on to og plan):
+- Choosing one of multiple restaurants
+- Lazy loading with loading screen (just a modal with a barber pole) and text that says loading from site and after loaded foods appear 'gpt-ifying' for respective steps
+- Federated google login working
+- Little message/modal/t style redirect to federated clicking the save meal or preferences buttons also like a login or signup button with small text and the same message just ape yt
+- Sign up where they can preset preferences and set locations (midnight scraped from dropdown for institute, college, or university)
+- This is another table, location and specific restaurant to url
+- Profile page where they can update preferences
+- Ability to update/customize nutrition of gpt-d foods
+-Also don't have add/remove on the display yet unless they click a "manually add/remove items" button
+- This will force login if attempted by guests
+- Will visually highlight the foods as yellow
+- Also have a disclaimer of inaccuracy on apt nutrition modal and meals/sets of food items like reas containing apt-d foods
+- Abilitv to save meals
+- Meal table and users table required in db
+- also a create meal button and a choose meal dropdown and a save meal button
+- in both profile and main page the ability to make a meal your chosen meal
+- Dropdown in profile page to choose day, allowing you to see cumulative nutrition of chosen meals across days
+- Also to choose which bon appetit locations you are a part of (these are preloaded, up to three)
+- Overhaul styling w bootstrap 5
+- Hover over food units to help with unit understandings
+
+- Maybe can be advertised as an extension that just shows the pie chart thing and a loading screen or whatever, and directs you to the site for further customization
