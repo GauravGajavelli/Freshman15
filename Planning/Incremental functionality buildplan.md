@@ -4,6 +4,7 @@ Incremental functionality buildplan (talk abt this since I'm having to do this a
   - The way this will work is that there will be a table similar to valid meals (which foods will reference to identify what meal they're part of btw) that contains the current scraping status of meals (identifying them by university/restaurant (these point to that table with locations and urls), day, etc); it'll ping repeatedly and while the status id still scraping or gpt-ifying it'll display the appropriate message
 - Federated google login working
   - Little message/modal/t style redirect to federated clicking the save meal or preferences buttons also like a login or signup button with small text and the same message just ape yt
+  - Need to start splitting backend into services, includding a UserService.js
 - Sign up where they can preset preferences and set locations (midnight scraped from dropdown for institute, college, or university)
   - This is another table, location and specific restaurant to url
 - Profile page where they can update preferences
