@@ -1,3 +1,11 @@
+import OpenAI from "openai";
+const openai = new OpenAI();
+const fs = require("fs");
+
+import { outDatabase } from "./scraping_service";
+import { formattedDate } from "./scraping_service";
+import type { nutritionDetails } from "./constants_and_types";
+
 // GenerativeAIService
 // return all of the food objects from a given dayinfo that are nutritionless
 async function getNutritionless(daysAgo:number):Promise<any> {
@@ -98,7 +106,7 @@ async function getArtificialNutrition(name:string):Promise<any> {
       return completion.choices[0].message.content;
 }
 // GenerativeAIService
-// Returns the merged meal and artificial data TODO
+// Returns the merged meal and artificial data
 async function mergeArtificialData(toWrite:any,daysAgo:number):Promise<any> {
     // read in gpt data
     let filepath = "files/";
@@ -118,3 +126,21 @@ async function mergeArtificialData(toWrite:any,daysAgo:number):Promise<any> {
         }
     }
 }
+function beenGenerated(daysAgo:number) {
+    let filepath = "files/";
+    return fs.existsSync(filepath+formattedDate(daysAgo)+"_gpt_nutrition.json");
+}
+function writeGenerated(daysAgo:number,generated:any):boolean {
+    // Save in a file
+    let filepath = "files/";
+    fs.writeFile(filepath+formattedDate(daysAgo)+"_gpt_nutrition.json", JSON.stringify(generated), function(err:any, buf:any ) {
+        if(err) {
+            return false;
+        } else {
+            return true;
+        }
+    });
+    return false;
+}
+
+export {getNutritionless,convertToNutritioned,mergeArtificialData,beenGenerated,writeGenerated};

@@ -1,3 +1,6 @@
+const GLPK = require('glpk.js');
+const glpk = GLPK();
+import type { FoodSquare } from "./constants_and_types";
 // MealService
 // Creates a tier-zero maximized objective function
 function tZeroObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
@@ -411,3 +414,8 @@ async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f
     let solution = await glpk.solve(lp, opt);
     return solutionToFoods(solution,board); /* Converts the solution into the food square object */
 }
+export {
+//tZeroObjective,createObjective,getCalVars,getFatProteinVars,getCarbFatVars,getProteinCarbVars,
+//getFatVars,getCarbVars,getProteinVars,calculateRequiredsBanneds,createConstraints,createIntegers,
+//createOptions,solutionToFoods,
+generateMeal};

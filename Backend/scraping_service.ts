@@ -1,9 +1,17 @@
-    // ScrapingService
-    // Returns specific sections of courses
-    function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:string,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean,v:boolean,ve:boolean,gf:boolean):Food {
-        const nDetails: nutritionDetails = {
-            calories: {
-                value: calories,
+var puppeteer = require('puppeteer');
+const { DateTime } = require("luxon");
+const fs = require("fs");
+
+import type { Food } from "./constants_and_types";
+import type { nutritionDetails } from "./constants_and_types";
+import { foodTier } from "./constants_and_types";
+import { archivedBonSite } from "./constants_and_types";
+// ScrapingService
+// Returns specific sections of courses
+function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:string,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean,v:boolean,ve:boolean,gf:boolean):Food {
+    const nDetails: nutritionDetails = {
+        calories: {
+        value: calories,
         unit: "string"
         },
         servingSize: {
@@ -187,6 +195,7 @@ async function inDatabase(daysAgo:number):Promise<boolean> {
 }
 // ScrapingService
 // Only call if the meal is in the archive
+// TODO, get rid of this as we SQL-ify, won't need to get everything so crudely every time
 async function outDatabase(daysAgo:number):Promise<any> {
     let filepath = "files/";
     let filename = formattedDate(daysAgo)+"_dayinfo";
@@ -255,3 +264,20 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
     }
     return toRet;
 }
+async function scrapingUp():Promise<boolean> {
+    let content = await bonSiteUp(); // gets the public site html
+    let prev = await fs.promises.readFile(archivedBonSite);
+    return content==prev;
+}
+async function writeArchive():Promise<boolean> {
+    let content = await bonSiteUp(); // gets the banner site html
+    fs.writeFile(archivedBonSite,content,function(err:any, buf:any) {
+        if(err) {
+            return false;
+        } else {
+            return true;
+        }
+    });
+    return false;
+}
+export {formattedDate,writeDayData,inDatabase,outDatabase,getMenusAndMeals,scrapingUp,writeArchive}
