@@ -22,8 +22,13 @@ const glpk = GLPK();
 const openai = new OpenAI();
 var Connection = require('tedious').Connection;
 var Request = require('tedious').Request;
-
 var puppeteer = require('puppeteer');
+
+import type { Food } from "./constants_and_types";
+import type { FoodSquare } from "./constants_and_types";
+import type { nutritionDetails } from "./constants_and_types";
+import { foodTier } from "./constants_and_types";
+import { archivedBonSite } from "./constants_and_types";
 
 // https://legacy.cafebonappetit.com/print-menu/cafe/1374/menu/463779/days/today/pgbrks/1/
 // This gives an easily parsible overview of the key foods of the day
@@ -34,69 +39,15 @@ var puppeteer = require('puppeteer');
 // scripts = soup.find_all("script", string=re.compile(r"Bamco\.dayparts"))
 // menuitems = soup.find_all(
     //     "script", string=re.compile(r"Bamco\.menu_items"))
-    const archivedBonSite = "files/old_bon_site.html";
-    enum foodTier {
-        Special = 0,
-        Additional,
-        Condiment
-    }
-    type Food = {    
-        "id": number,
-        "label": string,
-        "description": string,
-        "short_name": string,
-        "raw_cooked": number,
-        "meal":string,
-        "tier":foodTier,
-        "nutritionless":boolean,
-        "artificial_nutrition":boolean,
-        "nutrition": {
-            "kcal": number,
-            "well_being": number,
-        },
-        "vegetarian":boolean,
-        "vegan":boolean,
-        "glutenfree":boolean,
-        "station_id": number,
-        "station": string,
-        "nutrition_details": nutritionDetails,
-        "ingredients": string[],
-        "sub_station_id": number,
-        "sub_station": string,
-        "sub_station_order": number,
-        "monotony": {}
-    }
-    type FoodSquare = {
-        food:any, /* Would be Food type, but string stuff */
-        required:boolean,
-        banned:boolean,
-        quantity:number
-    }
-    type nutritionDetails = {
-        "calories": {
-            "value": number,
-            "unit": string
-        },
-        "servingSize": {
-            "value": number,
-            "unit": string
-        },
-        "fatContent": {
-            "value": number,
-            "unit": string
-        },
-        "carbohydrateContent": {
-            "value": number,
-            "unit": string
-        },
-        "proteinContent": {
-            "value": number,
-            "unit": string
-        }
-    }
 
+// ScrapingService
+// UserService
+// GenerativeAIService
+// MealService (calculating, crudding foods, etc)
+
+    // ScrapingService
     // Returns specific sections of courses
-    function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:string,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean,v:boolean,ve:boolean,gf:boolean):Food {
+function food_factory (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:string,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean,v:boolean,ve:boolean,gf:boolean):Food {
         const nDetails: nutritionDetails = {
             calories: {
                 value: calories,
@@ -147,98 +98,19 @@ var puppeteer = require('puppeteer');
     };
     return toRet;
 }
+// ScrapingService
 // Valid numbers of days ago: -1 < n <= whatever
 function bonSite(daysAgo:number):string {
     return 'https://rose-hulman.cafebonappetit.com/cafe/'+(daysAgo!=0?formattedDate(daysAgo):'');
 }
+// ScrapingService
 function formattedDate (daysAgo:number):string {
     let val = DateTime.now().minus({ days: daysAgo });
     return val.year+"-"+val.month.toString().padStart(2,'0')+"-"+val.day.toString().padStart(2,'0');
 }
-function getStandardDeviation (array:any[]):number {
-    const n:number = array.length;
-    const mean:number = average(array);
-    return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a:number, b:number) => a + b) / n);
-}
-function average(arr:any[]):number {
-    return arr.reduce( ( p:number, c:number ) => p + c, 0 ) / arr.length;
-};
-function gaussianRandom(mean:number, stdev:number):number {
-    const u:number = 1 - Math.random(); // Converting [0,1) to (0,1]
-    const v:number = Math.random();
-    const z:number = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
-    // Transform to the desired mean and standard deviation:
-    return z * stdev + mean;
-}
-// Creates a objective function
-// Coefficents are normally distributed random numbers in the ballpark of the sum of macronutrients by having same mean, sd
-function research(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
-    /*let toRet:any = [];
-    let i:number = 0;
-    for (const id in board) {
-        const fS = board[id]; // foodSquare
-        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
-            let cal = parseInt(fS.food["nutrition_details"]["proteinContent"]["value"]);
-            if (!cal) {
-                cal = 10;
-            }
-            toRet.push((cal*4));
-
-            cal = parseInt(fS.food["nutrition_details"]["carbohydrateContent"]["value"]);
-            if (!cal) {
-                cal = 10;
-            }
-            toRet[i] += ((cal*4));
-
-            cal = parseInt(fS.food["nutrition_details"]["fatContent"]["value"]);
-            if (!cal) {
-                cal = 10;
-            }
-            toRet[i] += ((cal*9));
-            i++;
-        }
-    }
-
-    let retAvg:number = average(toRet);
-    let retSd:number = getStandardDeviation(toRet);
-    console.log("Avg # calories: "+retAvg);
-    console.log("Sd # calories: "+retSd);
-
-    toRet = [];
-    for (const id in board) {
-        const fS = board[id]; // foodSquare
-        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
-            let cal = parseInt(fS.food["nutrition_details"]["fatContent"]["value"]);
-            if (!cal) {
-                cal = 10;
-            }
-            toRet.push({ name: id, coef: gaussianRandom(retAvg,retSd)});
-        }
-    }
-    return toRet;*/
- 
-    /*// new research: using the objective function to incentivize proportional meals
-    let toRet:any = [];
-    for (const id in board) {
-        const fS = board[id]; // foodSquare
-        if (fS.food["tier"] == 0 || fS.food["tier"] == 2) {
-            let cal = parseInt(fS.food["nutrition_details"]["fatContent"]["value"]);
-            if (!cal) {
-                cal = 10;
-            }            
-            let cil = parseInt(fS.food["nutrition_details"]["carbohydrateContent"]["value"]);
-            if (!cil) {
-                cil = 10;
-            }
-            let col = parseInt(fS.food["nutrition_details"]["proteinContent"]["value"]);
-            if (!col) {
-                col = 10;
-            }
-            toRet.push({ name: id, coef: ((cal*9)/(f/100))+((cil*4)/(c/100))+((col*4)/(p/100))});
-        }
-    }
-    return toRet;*/
- 
+// MealService
+// Creates a tier-zero maximized objective function
+function tZeroObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
     // new new research: maximizing tier 0, the main courses; if this ends up not being nuanced enough once we get all of the rest of the data, do weights with higher ones for tier 0 and lower for tiers 2 and 1
     let toRet:any = [];
     for (const id in board) {
@@ -252,6 +124,7 @@ function research(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:
     }
     return toRet;
 }
+// MealService
 // TODO add better objectives; it seems you figure them out when you have a bad one and are repeatedly annoyed, forcing you to reevaluate your objective
 function createObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
     // Objective (could be any of the following)
@@ -271,7 +144,7 @@ function createObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:nu
         // Since our normalized price is free, I'd say our objective would simply be to maximize z = 0*f1+0*f2+0*f3+... = 0
             // f1, f2, ... denote the food names, but I'll just use food ids or names to keep it simpler
 
-        let objective:any = research(board,v,ve,gf,k,f,c,p); // works, maximizes specials
+        let objective:any = tZeroObjective(board,v,ve,gf,k,f,c,p); // works, maximizes specials
         // objective = getCalVars(board); works
         // objective = research(board,v,ve,gf,k,f,c,p); // works, used to just give normally distributed random numbers in the ballpark of the sum of macronutrients
         return {
@@ -280,6 +153,7 @@ function createObjective(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:nu
         vars: objective
     };
 }
+// MealService
 // TODO Null check won't matter, so I should get rid of the "default" (10*9)+(10*4)+(10*4) stuff
 // Returns array of foods with corresponding calories
 function getCalVars(board:any):any {
@@ -296,6 +170,7 @@ function getCalVars(board:any):any {
     }
     return toRet;
 }
+// MealService
 // Returns array of variables for the constraint: 
 // (total calories from fat/f%)-(total calories from protein/p%) = 0
 function getFatProteinVars(f:number,p:number,board:any):any { // assumes all values in food nutritions are in grams
@@ -316,6 +191,7 @@ function getFatProteinVars(f:number,p:number,board:any):any { // assumes all val
     }
     return toRet;
 }
+// MealService
 // Returns array of variables for the constraint: 
 // (total calories from carbohydrate/c%)-(total calories from fat/f%) = 0
 function getCarbFatVars(c:number,f:number,board:any):any {
@@ -337,6 +213,7 @@ function getCarbFatVars(c:number,f:number,board:any):any {
     }
     return toRet;
 }
+// MealService
 // Returns array of variables for the constraint: 
 // (total calories from protein/p%)-(total calories from carbohydrate/c%) = 0
 function getProteinCarbVars(p:number,c:number,board:any):any { // assumes all values in foods are in grams
@@ -358,6 +235,7 @@ function getProteinCarbVars(p:number,c:number,board:any):any { // assumes all va
     }
     return toRet;
 }
+// MealService
 // Returns array of variables for the constraint: 
 // total calories from fat
 function getFatVars(board:any):any { // assumes all values in foods are in grams
@@ -374,6 +252,7 @@ function getFatVars(board:any):any { // assumes all values in foods are in grams
     }
     return toRet;
 }
+// MealService
 // Returns array of variables for the constraint: 
 // total calories from carbohydrate
 function getCarbVars(board:any):any { // assumes all values in foods are in grams
@@ -390,6 +269,7 @@ function getCarbVars(board:any):any { // assumes all values in foods are in gram
     }
     return toRet;
 }
+// MealService
 // Returns array of variables for the constraint: 
 // total calories from protein
 function getProteinVars(board:any):any { // assumes all values in foods are in grams
@@ -406,6 +286,7 @@ function getProteinVars(board:any):any { // assumes all values in foods are in g
     }
     return toRet;
 }
+// MealService
 // TODO Add in dietary restrictions into calculation
 function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):any { // creates a bunch of single variable constraints for required/banned foods, dietary restrictions
     let duplicatesAllowed:number = 2;
@@ -449,6 +330,7 @@ function calculateRequiredsBanneds(board:any,v:boolean,ve:boolean,gf:boolean):an
     }
     return toRet;
 }
+// MealService
 // validFoods is all the ids of foods we're considering for eating (really just used in case we do/don't want to include tier 1 in the future, since validFoods is made in a function that excludes tier 1's)
 // lenience:number; how far the ratios can stray, must be 0 < lenience < 1
 function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,lenience:number,use_int:boolean):any {
@@ -526,6 +408,7 @@ function createConstraints(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:
     // I could use the proteinCarbohydrate, but by the transitive property it's taken care of AS LONG AS BOUNDS ARE OKAY ON THE OTHER TWO
     return constraints; // the key was to use the techniques I learned; give the ratio breathing room (+- 0.1), try both giving and not giving extra information (symmetric eq), realuze that my problem is so simple relative to others' that glpk can prbably do it (why I had the confidence to search for the rror code that allowed me to realize the reason why protein and protein2 weren't enough were due to the lack of an overall calorie constraint; sometimes information is useful, sometimes it's bad. it needs breathing room to solve, but not infinite breathing room)
 }
+// MealService
 function createIntegers(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):string[] {
     let toRet:string[] = [];
     for (const id in board) {
@@ -537,6 +420,7 @@ function createIntegers(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:num
     }
     return toRet;
 }
+// MealService
 // TODO For future refactor: just make the inputs these items from the Options interface (see method internal) 
 function createOptions(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number):any {
     // interface Options {
@@ -558,6 +442,7 @@ function createOptions(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:numb
         tmlim: 10
     };
 }
+// MealService
 // TODO Get rid of default values once no longer applicable
 function solutionToFoods(solution:any,board:any):FoodSquare[] {
     // console.log("GENERATED MEAL: ");
@@ -603,7 +488,7 @@ function solutionToFoods(solution:any,board:any):FoodSquare[] {
     // console.log(`f: ${f}, c: ${c}, p: ${p}`);
     return toRet;
 }
-
+// MealService
 // Leniency is the degree to which we're willing to fudge constraints
     // Only one to keep things simple and bounds symmetric
 async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f:number,c:number,p:number,leniency:number,use_int:boolean):Promise<FoodSquare[]> {
@@ -636,6 +521,7 @@ async function generateMeal(board:any,v:boolean,ve:boolean,gf:boolean,k:number,f
     let solution = await glpk.solve(lp, opt);
     return solutionToFoods(solution,board); /* Converts the solution into the food square object */
 }
+// ScrapingService
 async function bonSiteUp():Promise<string> {
     // puppeteering
     const browser = await puppeteer.launch({headless: "new"});
@@ -648,6 +534,7 @@ async function bonSiteUp():Promise<string> {
     let content = await page.content();
     return content.toString().substring(2000,4000);
 }
+// ScrapingService
 // Returns a list of foods from the site daysAgo number of days ago
 // NOTE: Only call after you've downloaded menu
 // Chosen is an array of valid meal indices
@@ -676,6 +563,7 @@ async function getMeal(page:any,chosen:number,meals:string[],menu:any):Promise<F
     }
     return toRet;
 }
+// ScrapingService
 // TODO Get the v,ve,gf status of all foods
 // Pass in a page with foods to get
 async function getFoods(page:any,meal:number,meals:string[],tier:foodTier,toRet:Food[],menu:any):Promise<void> {
@@ -715,6 +603,7 @@ async function getFoods(page:any,meal:number,meals:string[],tier:foodTier,toRet:
         }
     }
 }
+// ScrapingService
 // Pass in a page with a valid menu
 // ASSUMPTION: the idea of getting the menu from days ago (and this does matter, as the IDs shift), hinges on them having giving us consistent menu IDs within each day's site
 // Returns an object with the menu with strings from the site daysAgo number of days ago
@@ -733,6 +622,7 @@ async function getMenu(page:any):Promise<string> {
     let endDex = script.indexOf("Bamco.cor_icons")-6;
     return script.substring(startDex,endDex);
 }
+// ScrapingService
 async function writeDayData(daysAgo:number,dayta:any) {
     let filepath = "files/";
     let filename = formattedDate(daysAgo)+"_dayinfo";
@@ -748,18 +638,21 @@ async function writeDayData(daysAgo:number,dayta:any) {
         }
     });
 }
+// ScrapingService
 // Returns if DB/file storage for having the value
 async function inDatabase(daysAgo:number):Promise<boolean> {
     let filepath = "files/";
     let filename = formattedDate(daysAgo)+"_dayinfo";
     return fs.existsSync(filepath+filename+".json");
 }
+// ScrapingService
 // Only call if the meal is in the archive
 async function outDatabase(daysAgo:number):Promise<any> {
     let filepath = "files/";
     let filename = formattedDate(daysAgo)+"_dayinfo";
     return await JSON.parse(await fs.promises.readFile(filepath+filename+".json"));
 }
+// ScrapingService
 async function getMenusAndMeals(daysOffset:number):Promise<object> {
     let toRet:any = {};
     toRet["validMenus"] = {};
@@ -822,6 +715,7 @@ async function getMenusAndMeals(daysOffset:number):Promise<object> {
     }
     return toRet;
 }
+// GenerativeAIService
 // return all of the food objects from a given dayinfo that are nutritionless
 async function getNutritionless(daysAgo:number):Promise<any> {
     let toRet:any = {};
@@ -849,6 +743,7 @@ async function getNutritionless(daysAgo:number):Promise<any> {
     }
     return toRet;
 }
+// GenerativeAIService
 // Turns chatgpt json into nutrition_details
 async function artificialToNatural(artificial:any):Promise<nutritionDetails> {
     /* GPT 3.5 Turbo Output
@@ -889,6 +784,7 @@ async function artificialToNatural(artificial:any):Promise<nutritionDetails> {
     };
     return nDetails;
 }
+// GenerativeAIService
 // modifies with nutrition details
 async function convertToNutritioned(nutritionlesses:any):Promise<void> {
     // let count:number = 0;
@@ -905,6 +801,7 @@ async function convertToNutritioned(nutritionlesses:any):Promise<void> {
         // count++;
     }
 }
+// GenerativeAIService
 async function getArtificialNutrition(name:string):Promise<any> {
     const completion = await openai.chat.completions.create({
         messages: [{ role: 'user', content: `As a dietitian, please draw a table to calculate line by line the energy (kcal)/carbohydrates (g)/lipids (g)/proteins (g) of the food items (raw, not cooked) used as ingredients in an "${name}" served for lunch in a cafeteria managed by Bon Appétit Management Company. In lieu of precise numbers, estimate the exact quantities of each ingredient and the effects of cooking processes to determine the energy (kcal)/carbohydrates (g)/lipids (g)/proteins (g) in a serving of ${name}, as well as how many ounces would be in that serving size.
@@ -917,6 +814,7 @@ async function getArtificialNutrition(name:string):Promise<any> {
 
       return completion.choices[0].message.content;
 }
+// GenerativeAIService
 // Returns the merged meal and artificial data TODO
 async function mergeArtificialData(toWrite:any,daysAgo:number):Promise<any> {
     // read in gpt data
@@ -937,30 +835,6 @@ async function mergeArtificialData(toWrite:any,daysAgo:number):Promise<any> {
         }
     }
 }
-// Overview
-  // This API will allow for the maintenance and use of a webscraper for Rose-Hulman's publicly available meal data
-
-// Commands: 
-    // Verification (COMPLETE)
-        // NOTE: Someone has to have already done 2FA before this works. I am using my credentials for this
-        // Put - Overwrite old_banner_site.html. Only call when sure twe can process old_site.html
-        // Get - The banner site is up/we logged in right (or at least has the html we expect)
-        // Put - Overwrite old_public_site.html. Only call when sure we can process old_site.html
-        // Get - The public site is up/we logged in right (or at least has the html we expect)
-    // Data acquisition (COMPLETE)
-        // NOTE: We can make this more flexible and parametrize by year, professor, etc. to update information in only parts of the db but waiting for mongodb first since I don't want to implement allat in json
-        // NOTE: New folders for each new year represented, with each one containing the respective courses and sections jsons
-        // Put - Write all courses from public site into 20XX_courseinfo.json. Year specified is the later of xxxx-yyyy, aka the year the class of yyyy graduates
-            // courseinfo needs to be organized by department, then course id/name
-        // Put - Write all sections from banner site into 20XX_sectioninfo.json (depends on corresponding courseinfo.json). // Write all courses from public site into 20XX_courseinfo.json. Year specified is the later of xxxx-yyyy, aka the year the class of yyyy graduates
-            // sectioninfo needs to be organized by quarter, then department, then course id/name, then section/professor
-        // Put - maybe later, also getting all of the descriptions could be fun
-    // Data distribution - the fun stuff (IN PROGRESS)
-        // A bunch of Gets, basically anything an actual DB can do, mixing and matching parameters to yoink appropriate records. Implementing this will be herculean with jsons, so just wait for and leverage mongodb or mysql when it comes around
-        // Get - whether a class exists (to prevent invalid classes from being created)
-        // Get - whether a section exists (to prevent invalid sections from being created) (if their section is empty so far and invisible,
-        //       we'll ask if they can't find a section that anyone's been a part of; don't want to overwhelm with empty sections)
-        // Get - any non-empty classes
 
 // ISSUES: 
     // Error: Requesting main frame too early!
@@ -1028,6 +902,7 @@ async function mergeArtificialData(toWrite:any,daysAgo:number):Promise<any> {
         // Front end, because people may have carry-over sessions from previous days and this way we don't have to have the food data for every possible day on the back end
     // Brunch not loading
         // use datetime.weekday and check for 6 (brunch only) and 7 (brunch and dinner)
+
 // Create
 router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cratio/:pratio/', async function(req:any, res:any) {
     // gung.FoodSquare = class {

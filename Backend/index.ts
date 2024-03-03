@@ -9,7 +9,7 @@ app.use(express.json({limit: '200mb'}));
     // app.use(.urlencoded({ extended: true }));
 app.use(express.urlencoded({limit: '200mb', extended: true}));
 
-var bon = require('./bone_scraper.ts');
+var bon = require('./endpoints.ts');
 app.use('/',bon);
 
 // var openai = require('./openai-test.ts');

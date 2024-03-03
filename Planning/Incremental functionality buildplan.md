@@ -21,6 +21,8 @@ Incremental functionality buildplan (talk abt this since I'm having to do this a
     - Dropdown in profile page to choose day, allowing you to see cumulative nutrition of chosen meals across day
  - Also to choose which bon appetit locations you are a part of (these are preloaded, up to three)
 - Overhaul styling w bootstrap 5
+  - Do this first so I don't have to redo as much later
+  - See examples sent to phillip (or use them muahahaha)
 - Hover over food units infographic rectangle to help with unit understandings
 
 - Maybe can be advertised as an extension that just shows the pie chart thing and nutrition facts after a small square version of the loading screen or whatever, and directs you to the site for further customization if you click on it or select customize plan
