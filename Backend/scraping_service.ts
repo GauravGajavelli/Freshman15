@@ -1,6 +1,9 @@
 var puppeteer = require('puppeteer');
 const { DateTime } = require("luxon");
 const fs = require("fs");
+var types = require('tedious').TYPES;
+var ConnectionM = require('tedious').Connection;
+var RequestM = require('tedious').Request;
 
 import type { Food } from "./constants_and_types";
 import type { nutritionDetails } from "./constants_and_types";
@@ -186,9 +189,83 @@ async function writeDayData(daysAgo:number,dayta:any) {
         }
     });
 }
+function newWriteDayData(daysAgo:number,prevDayta:any) {
+    console.log("No robo: "+Object.entries(prevDayta));
+    var config = JSON.parse(fs.readFileSync("../Database/connectivity_config.json"));
+    for (const day in prevDayta.validMenus) { // all validmenus
+        for (const meal in prevDayta.meals[day]) { // all validmeals
+            console.log("clungo: "+day+", "+meal);
+            let foods = prevDayta.meals[day][meal];
+            if (Object.keys(foods).length > 0) { // {} check
+                for (let i = 0; i < foods.length; i++) {
+                    let food = foods[i];
+                    const connection = new ConnectionM(config);
+                    connection.connect(function (err:any) {
+                        // console.log("Blube: "+food.label+", "+food.tier);
+                        if (err) {
+                            console.log('Connection Failed');
+                            throw err;
+                        }
+                        importFood(food, day, meal, connection);
+                    });
+                    // console.log("kunger");
+                }
+            }
+        }
+    }
+}
+function importFood(food:any, day:any, meal:any, connection:any) {
+    // food = '{"id":"5423187","label":"yogurt vanilla low fat","description":"string","short_name":"string","raw_cooked":1010101,"meal":"dinner","tier":2,"nutritionless":false,"artificial_nutrition":false,"nutrition":{"kcal":"60","well_being":1010101},"station_id":1010101,"station":"string","nutrition_details":{"calories":{"value":"60","unit":"string"},"servingSize":{"value":"0.3","unit":"oz"},"fatContent":{"value":"1","unit":"string"},"carbohydrateContent":{"value":"9","unit":"string"},"proteinContent":{"value":"3","unit":"string"}},"ingredients":["string[]"],"sub_station_id":1010101,"sub_station":"string","sub_station_order":1010101,"monotony":{},"vegetarian":true,"vegan":false,"glutenfree":true}';
+    // meal="breakfast";
+    // console.log("CUHZIN: "+JSON.stringify(food));
+    const request = new RequestM('insertFood', (err:any, rowCount:any) => {
+      if (err) { 
+        // throw err;   
+        console.log(food.label+", "+food.tier);
+      }
+    //   console.log('DONE!');
+      connection.close();
+    });
+
+    food.nutrition_details.calories.value = parseFloat(food.nutrition_details.calories.value)?parseFloat(food.nutrition_details.calories.value):"0.5";
+    food.nutrition_details.carbohydrateContent.value = parseFloat(food.nutrition_details.carbohydrateContent.value)?parseFloat(food.nutrition_details.carbohydrateContent.value):"0.5";
+    food.nutrition_details.fatContent.value = parseFloat(food.nutrition_details.fatContent.value)?parseFloat(food.nutrition_details.fatContent.value):"0.5";
+    food.nutrition_details.proteinContent.value = parseFloat(food.nutrition_details.proteinContent.value)?parseFloat(food.nutrition_details.proteinContent.value):"0.5";
+    request.addParameter('json', types.VarChar, JSON.stringify(food));
+    request.addParameter('date', types.Date, new Date(formattedDate(day)));
+    request.addParameter('meal', types.VarChar, meal);
+
+    // Emits a 'DoneInProc' event when completed.
+    request.on('row', (columns:any) => {
+      columns.forEach((column:any) => {
+        if (column.value === null) {
+          console.log('NULL');
+        } else {
+          console.log(column.value);
+        }
+      });
+    });
+
+    request.on('done', (rowCount:any, more:any, rows:any) => {
+    console.log(rowCount);
+    //   console.log('Done is called!');
+    });
+
+    request.on('requestCompleted', (rowCount:any, more:any, rows:any) => {
+        // console.log('Request '+num+' completed!');
+      });
+
+
+    // In SQL Server 2000 you may need: connection.execSqlBatch(request);
+    connection.callProcedure(request);
+    // console.log(JSON.stringify(food));
+}
 // ScrapingService
 // Returns if DB/file storage for having the value
 async function inDatabase(daysAgo:number):Promise<boolean> {
+    // TODO Refactor to query the status table once it exists
+        // If it's anything but completed send back something verbose enough to indicate the loading progress
+        // The keys are restaurant, day, and mealtype
     let filepath = "files/";
     let filename = formattedDate(daysAgo)+"_dayinfo";
     return fs.existsSync(filepath+filename+".json");
@@ -197,6 +274,8 @@ async function inDatabase(daysAgo:number):Promise<boolean> {
 // Only call if the meal is in the archive
 // TODO, get rid of this as we SQL-ify, won't need to get everything so crudely every time
 async function outDatabase(daysAgo:number):Promise<any> {
+    // TODO 
+        // Get all of the foods of the specified restaurant, day, and mealtype
     let filepath = "files/";
     let filename = formattedDate(daysAgo)+"_dayinfo";
     return await JSON.parse(await fs.promises.readFile(filepath+filename+".json"));
@@ -280,4 +359,4 @@ async function writeArchive():Promise<boolean> {
     });
     return false;
 }
-export {formattedDate,writeDayData,inDatabase,outDatabase,getMenusAndMeals,scrapingUp,writeArchive}
+export {formattedDate,writeDayData,inDatabase,outDatabase,getMenusAndMeals,scrapingUp,writeArchive,newWriteDayData}

@@ -17,8 +17,9 @@
     "glpk.js": "^4.0.2",
     "javascript-lp-solver": "^0.4.24",
     "luxon": "^3.4.4",
+    "mssql": "^10.0.2",
     "openai": "^4.24.1",
     "puppeteer": "^21.6.1",
-    "tedious": "^16.7.0"
+    "tedious": "^16.7.1"
   }
 }

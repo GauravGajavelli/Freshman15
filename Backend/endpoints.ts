@@ -21,7 +21,7 @@ var Request = require('tedious').Request;
 // ScrapingService
 import * as scraping from './scraping_service';
 // UserService
-    // import * as users from './user_service';
+import * as users from './user_service';
 // GenerativeAIService
 import * as gen_ai from './generative_ai_service';
 // MealService (calculating, crudding foods, etc)
@@ -79,6 +79,9 @@ router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cr
 });
 // Read
 router.get('/test/', async function(req:any, res:any) {
+    let daysAgo = 0;
+    let toWrite = await scraping.outDatabase(daysAgo);
+    scraping.newWriteDayData(daysAgo,toWrite);
     res.send("Backend is up");
 });
 // RUN BEFORE FUTURE SCRAPING. Checks if the bon site is up/in the same format it was designed for
@@ -98,16 +101,18 @@ router.get('/days_and_meals/:daysAgo/', async function(req:any, res:any) {
     let toWrite:any = [];
     if (await scraping.inDatabase(daysAgo)) {
         toWrite = await scraping.outDatabase(daysAgo);
+        scraping.newWriteDayData(daysAgo,toWrite);
     } else {
+        console.log("Hung up my gloves");
         toWrite = await scraping.getMenusAndMeals(daysAgo);
         await scraping.writeDayData(daysAgo,toWrite);
+            scraping.newWriteDayData(daysAgo,toWrite);
     }
     // If the gpt file exists, merge these together and send it as meals out
     // If it's already been done, then don't either
     if (gen_ai.beenGenerated(daysAgo)) {
         await gen_ai.mergeArtificialData(toWrite,daysAgo);
     }
-
     res.send(toWrite);
 });
 // Update
