@@ -37,3 +37,12 @@ Incremental functionality buildplan (talk abt this since I'm having to do this a
 
 - Also don't forget alex and philip-style outreach plans; reach out to their open source software clubs, their social media presences, linkedin etc not necessarily pushing but asking who to push (ie an open source software club) to gain more users
   - At rose at least tho, target at people who are concerned about getting fat or dietary restrictions, and specifically those freshmen who may be anxious about their future on campus
+
+- I can't do SQL stuff and file stuff simultaneously
+  - I have to/should try to do everything in one await each
+  - For example, instead of having it be a choice between one endpoint that potentially we use for both checking and getting data, we have to split into to differnet endpoints
+
+- When adding functionality, create an epic with disordered "tickets" as you imagine the funcionality happening
+  - Then order and do
+
+- The most important skill for a software engineer is to slog, even when it sucks

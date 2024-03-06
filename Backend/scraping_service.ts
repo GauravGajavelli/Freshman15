@@ -343,7 +343,7 @@ const connectPromise = (connection:any) => {
         connection.connect((err: any) => {
             if (err) {
                 console.log('Connection Failed');
-                reject(err);
+                resolve(err);
             }
             resolve("Connection Succeeded!");
         });

@@ -125,10 +125,7 @@ router.put('/update_archive/',async function(req:any,res:any) {
             res.send("Success writing archive");
         }
 });
-router.put('/generate_artificial_data/:daysAgo/:password',async function(req:any,res:any) {
-    if (req.params.password != "kriskringle") {
-        return;
-    }
+router.put('/generate_artificial_data/:daysAgo/',async function(req:any,res:any) {
     let daysAgo = req.params.daysAgo;
     // If the file doesn't exist
     if (!(await scraping.inDatabase(daysAgo))) { // Structured like this because I don't want to spend too much time messing with file processing stuff that will get refactored away, and have code that can be reused
