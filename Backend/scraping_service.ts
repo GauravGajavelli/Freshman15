@@ -4,6 +4,9 @@ const fs = require("fs");
 var types = require('tedious').TYPES;
 var ConnectionM = require('tedious').Connection;
 var RequestM = require('tedious').Request;
+// var Promise = require('bluebird');
+import util from 'util';
+
 
 import type { Food } from "./constants_and_types";
 import type { nutritionDetails } from "./constants_and_types";
@@ -189,9 +192,10 @@ async function writeDayData(daysAgo:number,dayta:any) {
         }
     });
 }
-function newWriteDayData(daysAgo:number,prevDayta:any) {
+function newWriteDayData(daysAgo:number,prevDayta:any):Promise<any> {
     console.log("No robo: "+Object.entries(prevDayta));
     var config = JSON.parse(fs.readFileSync("../Database/connectivity_config.json"));
+    let promiseArr:Promise<any>[] = [];
     for (const day in prevDayta.validMenus) { // all validmenus
         for (const meal in prevDayta.meals[day]) { // all validmeals
             console.log("clungo: "+day+", "+meal);
@@ -200,19 +204,14 @@ function newWriteDayData(daysAgo:number,prevDayta:any) {
                 for (let i = 0; i < foods.length; i++) {
                     let food = foods[i];
                     const connection = new ConnectionM(config);
-                    connection.connect(function (err:any) {
-                        // console.log("Blube: "+food.label+", "+food.tier);
-                        if (err) {
-                            console.log('Connection Failed');
-                            throw err;
-                        }
-                        importFood(food, day, meal, connection);
-                    });
-                    // console.log("kunger");
+                    let prom:Promise<any> = connectPromise(connection);
+                    prom.then(() => importFood(food, day, meal, connection))
+                    promiseArr.push(prom);
                 }
             }
         }
     }
+    return Promise.all(promiseArr);
 }
 function importFood(food:any, day:any, meal:any, connection:any) {
     // food = '{"id":"5423187","label":"yogurt vanilla low fat","description":"string","short_name":"string","raw_cooked":1010101,"meal":"dinner","tier":2,"nutritionless":false,"artificial_nutrition":false,"nutrition":{"kcal":"60","well_being":1010101},"station_id":1010101,"station":"string","nutrition_details":{"calories":{"value":"60","unit":"string"},"servingSize":{"value":"0.3","unit":"oz"},"fatContent":{"value":"1","unit":"string"},"carbohydrateContent":{"value":"9","unit":"string"},"proteinContent":{"value":"3","unit":"string"}},"ingredients":["string[]"],"sub_station_id":1010101,"sub_station":"string","sub_station_order":1010101,"monotony":{},"vegetarian":true,"vegan":false,"glutenfree":true}';
@@ -234,27 +233,6 @@ function importFood(food:any, day:any, meal:any, connection:any) {
     request.addParameter('json', types.VarChar, JSON.stringify(food));
     request.addParameter('date', types.Date, new Date(formattedDate(day)));
     request.addParameter('meal', types.VarChar, meal);
-
-    // Emits a 'DoneInProc' event when completed.
-    request.on('row', (columns:any) => {
-      columns.forEach((column:any) => {
-        if (column.value === null) {
-          console.log('NULL');
-        } else {
-          console.log(column.value);
-        }
-      });
-    });
-
-    request.on('done', (rowCount:any, more:any, rows:any) => {
-    console.log(rowCount);
-    //   console.log('Done is called!');
-    });
-
-    request.on('requestCompleted', (rowCount:any, more:any, rows:any) => {
-        // console.log('Request '+num+' completed!');
-      });
-
 
     // In SQL Server 2000 you may need: connection.execSqlBatch(request);
     connection.callProcedure(request);
@@ -359,4 +337,17 @@ async function writeArchive():Promise<boolean> {
     });
     return false;
 }
+
+const connectPromise = (connection:any) => {
+    return new Promise((resolve, reject) => {
+        connection.connect((err: any) => {
+            if (err) {
+                console.log('Connection Failed');
+                reject(err);
+            }
+            resolve("Connection Succeeded!");
+        });
+    });
+}
+
 export {formattedDate,writeDayData,inDatabase,outDatabase,getMenusAndMeals,scrapingUp,writeArchive,newWriteDayData}

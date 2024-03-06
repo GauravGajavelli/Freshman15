@@ -99,3 +99,4 @@ GO
 -- , @date = '2017-08-25',@meal = 'breakfast';
 
 -- SELECT COUNT(*) FROM Food
+-- DELETE FROM Food
