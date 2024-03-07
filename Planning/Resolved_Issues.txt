@@ -64,3 +64,5 @@
         // Front end, because people may have carry-over sessions from previous days and this way we don't have to have the food data for every possible day on the back end
     // Brunch not loading
         // use datetime.weekday and check for 6 (brunch only) and 7 (brunch and dinner)
+    // Cannot use Tedious upload and File Write at the same time
+        // Just use tedious, I'm transitioning away from .json

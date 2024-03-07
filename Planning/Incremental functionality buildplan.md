@@ -46,3 +46,39 @@ Incremental functionality buildplan (talk abt this since I'm having to do this a
   - Then order and do
 
 - The most important skill for a software engineer is to slog, even when it sucks
+
+- A big thing I learned with this project is how to take a raw idea with its appeal, into chunks, and then chunk those chunks, and then split those into doable segments
+  - Splitting into epics and tickets from a disarrayed list of features
+    - Writing out everything beforehand starting each Epic, and writing each Epic contained within new stories
+
+=======================================================================================================================================================================
+
+Current Epic: Lazy Loading
+- Tickets
+  1. Create loading into Meal/Load Status
+  2. 
+  3. 
+  4. 
+  5. 
+  6. 
+
+=======================================================================================================================================================================
+
+Future Epics (and any specific tickets): 
+- Signup
+- Bootstrapify All
+  1. Create all final frintend files
+  2. Add bootstrap to them
+  3. Draw out FSM of the loading process from what state the page is and what the load status is
+     a. This can be used to more easily structure what users can see based on state; use like an enum to encode
+     b. Thus is a thing: https://www.google.com/search?q=ui+finite+state+machine&oq=ui+finite+state+machine&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBCDQyNzhqMGoxqAIAsAIA&sourceid=chrome&ie=UTF-8
+- DeleteOldData
+  1. Mark tables that are related to scraping with the date they were scraped on
+  2. Create a SPROC that deletes all records from the tables with a provided date a week before today
+     a. User created data shouldn't be though
+  3. Get a nightly routine to call it
+
+=======================================================================================================================================================================
+
+Past Epics: 
+- 

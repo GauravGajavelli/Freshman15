@@ -5,32 +5,19 @@ const fs = require("fs");
 import { outDatabase } from "./scraping_service";
 import { formattedDate } from "./scraping_service";
 import type { nutritionDetails } from "./constants_and_types";
+import type { Food } from "./constants_and_types";
 
 // GenerativeAIService
 // return all of the food objects from a given dayinfo that are nutritionless
-async function getNutritionless(daysAgo:number):Promise<any> {
+/** TODO  */ // Refactor to only do this for a single meal
+async function getNutritionless(daysAgo:number, foods:Food[]):Promise<any> {
     let toRet:any = {};
-    let prevDayta:any = await outDatabase(daysAgo);
-    // console.log("prevData entries: "+Object.entries(prevDayta));
-    // console.log("prevData.validMenus entries: "+Object.entries(prevDayta.validMenus));
-    // let count:number = 0;
-    for (const day in prevDayta.validMenus) { // all validmenus
-        // if (prevDayta.validMenus[day]) {
-        for (const meal in prevDayta.meals[day]) { // all validmeals
-        // if (prevDayta.validMeals[day][meals]) {
-            let foods = prevDayta.meals[day][meal];
-            if (Object.keys(foods).length > 0) { // {} check
-                for (let i = 0; i < foods.length; i++) {
-                    if (foods[i].nutritionless) {
-                        const id:string = foods[i]["id"]/* count.toString()*/;
-                        toRet[id] = foods[i];
-                        // count++;
-                    }
-                }
-            }
-        // }
+    for (let i = 0; i < foods.length; i++) {
+        if (foods[i].nutritionless) {
+            const id:number = foods[i]["id"]/* count.toString()*/;
+            toRet[id] = foods[i];
+            // count++;
         }
-        // }
     }
     return toRet;
 }
@@ -105,42 +92,28 @@ async function getArtificialNutrition(name:string):Promise<any> {
 
       return completion.choices[0].message.content;
 }
-// GenerativeAIService
-// Returns the merged meal and artificial data
-async function mergeArtificialData(toWrite:any,daysAgo:number):Promise<any> {
-    // read in gpt data
-    let filepath = "files/";
-    let filename = formattedDate(daysAgo)+"_gpt_nutrition";
-    let gptData:any = await JSON.parse(await fs.promises.readFile(filepath+filename+".json"));
-    // iterate through all of the days/meals/foods, and replace the foods with artificials based on matches in keyset
-    for (const day in toWrite.validMenus) { // all validmenus
-        for (const meal in toWrite.meals[day]) { // all validmeals
-            let foods = toWrite.meals[day][meal];
-            if (Object.keys(foods).length > 0) { // {} check
-                for (let i = 0; i < foods.length; i++) {
-                    if (foods[i].nutritionless) {
-                        foods[i] = gptData[foods[i].id];
-                    }
-                }
-            }
-        }
-    }
-}
-function beenGenerated(daysAgo:number) {
-    let filepath = "files/";
-    return fs.existsSync(filepath+formattedDate(daysAgo)+"_gpt_nutrition.json");
-}
-function writeGenerated(daysAgo:number,generated:any):boolean {
-    // Save in a file
-    let filepath = "files/";
-    fs.writeFile(filepath+formattedDate(daysAgo)+"_gpt_nutrition.json", JSON.stringify(generated), function(err:any, buf:any ) {
-        if(err) {
-            return false;
-        } else {
-            return true;
-        }
-    });
-    return false;
-}
+// No longer need to check if the food has been gpt'd it already will be if it's been gotten
 
-export {getNutritionless,convertToNutritioned,mergeArtificialData,beenGenerated,writeGenerated};
+// Write to the Food Table (add ArtificialNutrition and NullNutrition booleans to Food, make nutrition fields nullable and enter this data into them)
+/**
+ * Nulls should be put in the nutrition of foods missing nutrition or which need to be generated
+
+Generation happens all at the same time; whenever someone says they want nutrition generated for a food, they are implicitly doing it for all, triggering the loading screen
+
+In the user interface, all of the foods that haven’t any nutrition aren’t included in calculations and are at the bottom all separately grouped together and grayed out
+- So user's aren't greeted with a loading screen
+  - Make it such that it's possible to have no meal selected (always need a restaurant and day though) - this is the new initial state
+  - Then when you click into a meal it will start loading
+
+Approach to crash handling in the process: 
+- Current: Who cares I'll do it later
+- Future: If there is a crash while initially getting, I'll allow a user to request a reload of the data
+  - Will wipe everything and try again
+  - Otherwise, if they get corrupted or incomplete data, they're stuck with it
+
+ * 
+ */
+
+/** TODO */
+
+export {getNutritionless,convertToNutritioned};

@@ -1,3 +1,7 @@
+DEPRECATED - Everything here is covered in Incremental functionality buildplan.md
+
+=======================================================================================================================================================================
+
 So my goal with this iteration of food app is to follow the SDLC a little more so I can use it in future projects
 
 Reference AirPizza and the project plan we made for it
