@@ -11,3 +11,10 @@ CREATE TABLE Users (
   Check ([year] in ('Freshman','Sophomore','Junior','Senior','Graduate'))
 )
 
+--select * from users
+
+--insert into users VALUES
+--('Gaurav','Gajavelli','CS','gajavegs','hmm','Sophomore')
+
+--insert into users VALUES
+--('  ','Gajavelli','CS','gajavegs','hmm','Sophomore')

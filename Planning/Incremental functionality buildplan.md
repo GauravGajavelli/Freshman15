@@ -55,12 +55,13 @@ Incremental functionality buildplan (talk abt this since I'm having to do this a
 
 Current Epic: Lazy Loading
 - Tickets
-  1. Create loading into Meal/Load Status
-  2. 
-  3. 
-  4. 
-  5. 
-  6. 
+  1. Create loading into Meal/Load Status Tables
+  2. Scrape specific meals
+  3. Loading into Meal/MealStatus
+  4. Specific meal getting
+   (honestly if I'm switching to eager, should I bother with the last two? If lazy is fast enough ig?)
+  5. Backend pinging for load
+  6. Non-interactive screen/loading bar
 
 =======================================================================================================================================================================
 

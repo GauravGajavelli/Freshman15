@@ -73,12 +73,18 @@ async function readMeal (daysAgo:number,mealstr:string):Promise<Food[]> {
 async function writeMeal (daysAgo:number,mealstr:string,foods:Food[]):Promise<any> {
     var config = JSON.parse(fs.readFileSync("../Database/connectivity_config.json"));
     let promiseArr:Promise<any>[] = [];
+    let foodGroup:Food[] = [];
     for (let i = 0; i < foods.length; i++) {
         let food = foods[i];
-        const connection = new ConnectionM(config);
-        let prom:Promise<any> = connectPromise(connection);
-        prom.then(() => importFood(food, daysAgo, mealstr, connection))
-        promiseArr.push(prom);
+        if (foodGroup.length == 1000) {
+            const connection = new ConnectionM(config);
+            let prom:Promise<any> = connectPromise(connection);
+            prom.then(() => importFoodBatch(foodGroup, daysAgo, mealstr, connection))
+            promiseArr.push(prom);
+            foodGroup = [];
+        } else {
+            foodGroup.push(food);
+        }
     }
     return Promise.all(promiseArr);
 }
@@ -187,18 +193,22 @@ function food_factory (id: number, name: string, calories:number, carbs: number,
     };
     return toRet;
 }
-function importFood(food:any, day:any, meal:any, connection:any) {
+/** TODO Update to use batch processing, add the nutritionless and artificial fields; for null check fails change table to allow nulls */
+function importFoodBatch(foods:Food[], day:any, meal:any, connection:any) {
     // food = '{"id":"5423187","label":"yogurt vanilla low fat","description":"string","short_name":"string","raw_cooked":1010101,"meal":"dinner","tier":2,"nutritionless":false,"artificial_nutrition":false,"nutrition":{"kcal":"60","well_being":1010101},"station_id":1010101,"station":"string","nutrition_details":{"calories":{"value":"60","unit":"string"},"servingSize":{"value":"0.3","unit":"oz"},"fatContent":{"value":"1","unit":"string"},"carbohydrateContent":{"value":"9","unit":"string"},"proteinContent":{"value":"3","unit":"string"}},"ingredients":["string[]"],"sub_station_id":1010101,"sub_station":"string","sub_station_order":1010101,"monotony":{},"vegetarian":true,"vegan":false,"glutenfree":true}';
     // meal="breakfast";
     // console.log("CUHZIN: "+JSON.stringify(food));
     const request = new RequestM('insertFood', (err:any, rowCount:any) => {
       if (err) { 
         // throw err;   
-        console.log(food.label+", "+food.tier);
+        console.log(foods[0].label+", "+foods[0].tier);
       }
     //   console.log('DONE!');
       connection.close();
     });
+
+    // change to checking <1 and null explicitly separately
+    // TODO, use this, seems like my exact use case: https://tediousjs.github.io/tedious/bulk-load.html
 
     food.nutrition_details.calories.value = parseFloat(food.nutrition_details.calories.value)?parseFloat(food.nutrition_details.calories.value):"0.5";
     food.nutrition_details.carbohydrateContent.value = parseFloat(food.nutrition_details.carbohydrateContent.value)?parseFloat(food.nutrition_details.carbohydrateContent.value):"0.5";

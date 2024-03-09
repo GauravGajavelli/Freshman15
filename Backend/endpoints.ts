@@ -22,6 +22,7 @@ import * as gen_ai from './generative_ai_service';
 // MealService (calculating, crudding foods, etc)
 import * as meals from './meal_service';
 import type { FoodSquare } from "./constants_and_types";
+import type { Food } from './constants_and_types';
 
 // TODO, get rid of the usage of outDatabase and inDatabase this as we SQL-ify, won't need to get everything so crudely every time
     // Plus every service will own some sql stuff (replacing all file stuff), that will be more efficient to move around than all the data at once
@@ -103,7 +104,7 @@ router.get('/mealnames/:daysAgo/', async function(req:any, res:any) { // Will ad
 });
 
 /** TODO Implement */
-router.get('/meals/:daysAgo/:mealstr', async function(req:any, res:any) { // Will add restaurant
+router.get('/meal/:daysAgo/:mealstr', async function(req:any, res:any) { // Will add restaurant
     let daysAgo:number = req.params.daysAgo;
     if (daysAgo < -1) {
         res.send("Invalid day: "+daysAgo);
@@ -114,7 +115,7 @@ router.get('/meals/:daysAgo/:mealstr', async function(req:any, res:any) { // Wil
         res.send("Empty meal string: "+mealstr);
         return;
     }
-    let toWrite:any = [];
+    let toWrite:Food[] = [];
     if (await scraping.hasMeal(daysAgo,mealstr)) {
         toWrite = await scraping.readMeal(daysAgo,mealstr);
         // scraping.newWriteDayData(daysAgo,toWrite);

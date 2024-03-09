@@ -93,7 +93,6 @@ async function getArtificialNutrition(name:string):Promise<any> {
       return completion.choices[0].message.content;
 }
 // No longer need to check if the food has been gpt'd it already will be if it's been gotten
-
 // Write to the Food Table (add ArtificialNutrition and NullNutrition booleans to Food, make nutrition fields nullable and enter this data into them)
 /**
  * Nulls should be put in the nutrition of foods missing nutrition or which need to be generated
@@ -106,14 +105,36 @@ In the user interface, all of the foods that haven’t any nutrition aren’t in
   - Then when you click into a meal it will start loading
 
 Approach to crash handling in the process: 
-- Current: Who cares I'll do it later
+- Current: There's only like 2 requests. It won't crash lol
 - Future: If there is a crash while initially getting, I'll allow a user to request a reload of the data
   - Will wipe everything and try again
   - Otherwise, if they get corrupted or incomplete data, they're stuck with it
-
  * 
  */
 
-/** TODO */
-
 export {getNutritionless,convertToNutritioned};
+
+/*
+53% of consumers will click away from a page that takes more than 3 seconds to load
+Consider using Pagination (https://nordicapis.com/everything-you-need-to-know-about-api-pagination/) and optimize the api response package (https://nordicapis.com/optimizing-the-api-response-package/)
+Now I want to know where I could’ve learned this information beforehand and how I could find more stuff like it for the future
+https://stackoverflow.com/questions/850117/whats-the-most-efficient-way-to-insert-thousands-of-records-into-a-table-mysql
+Like N+1, the moral of the story is that many individual inserts is not the way to go, esp for the network (this also solves the consistency of connectivity issue)
+https://stackoverflow.com/questions/2766039/fastest-way-for-inserting-very-large-number-of-records-into-a-table-in-sql
+More specifically T-SQL; also look into any more modern solution
+It’ll only take like 3 connections, thankfully
+“If you can do a hand-rolled INSERT statement, then that's the way I'd go. A single INSERT statement with multiple value clauses is much much faster than lots of individual INSERT statements.”
+Avoid lazy loading
+“Lazy loading is great for long web pages with lots of heavyweight content (like images, gifs, and videos) that are non-essential to the user experience on first load.”
+Not at all my site; my data is needed immediately
+If I can’t get it below 3 seconds, I could take psychological approaches to distracting from this
+https://www.google.com/search?q=using+psychology+to+distrcat+from+loading+times&rlz=1C1CHBD_en-GBUS1099US1099&oq=using+psychology+to+distrcat+from+loading+times&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIJCAEQIRgKGKABMgkIAhAhGAoYoAEyCQgDECEYChigAdIBCDU1MzdqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8
+https://medium.com/@WebdesignerDepot/4-tricks-to-make-load-times-feel-faster-788d2fee586b
+https://ux.stackexchange.com/questions/35734/if-you-cant-improve-loading-time-is-distracting-the-user-a-good-technique
+https://www.wired.com/2016/08/science-waiting-waiting-page-load/
+
+
+https://blog.hubspot.com/website/lazy-loading-eager-loading
+“Lazy loading hides an n+1 problem behind a single call. The caller has no reasonable way to discern what is occurring within the API and therefore no way to avoid these costly requests. As usage of the API increases the performance of API requests that implement lazy loading will become more of a burden on the system.”
+
+*/
