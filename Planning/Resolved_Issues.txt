@@ -66,3 +66,6 @@
         // use datetime.weekday and check for 6 (brunch only) and 7 (brunch and dinner)
     // Cannot use Tedious upload and File Write at the same time
         // Just use tedious, I'm transitioning away from .json
+    // Cannot do bulk load with TDS; keep getting colid error
+        // Googling: Copied others' functioning code
+        // Trial and Error: Realized I had a AddColumn marked as nullable when it wasn't; make sure to check the right sql file

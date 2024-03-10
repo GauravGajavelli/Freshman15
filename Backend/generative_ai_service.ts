@@ -1,9 +1,13 @@
 import OpenAI from "openai";
 const openai = new OpenAI();
 const fs = require("fs");
+var types = require('tedious').TYPES;
+var ConnectionM = require('tedious').Connection;
+var RequestM = require('tedious').Request;
 
 import { outDatabase } from "./scraping_service";
 import { formattedDate } from "./scraping_service";
+import { connectPromise } from "./scraping_service";
 import type { nutritionDetails } from "./constants_and_types";
 import type { Food } from "./constants_and_types";
 
@@ -92,6 +96,57 @@ async function getArtificialNutrition(name:string):Promise<any> {
 
       return completion.choices[0].message.content;
 }
+// Uses this method: https://catcherholms.medium.com/easy-and-optimized-way-for-batch-bulk-update-sql-records-with-different-unique-values-and-columns-81414419d675
+    // for bulk update. Put some thought into the options of adding another table for artificial data, using repeated single update, etc.
+    // I don't need to worry about scale that much here: even if some place had twice the number of foods per day that rose had
+// The key is minimizing the number of queries: I think we can get it all in one update
+// If it's too slow, try an approach splitting into a couple requests, analogous to pagniation
+    // https://www.mssqltips.com/sqlservertip/5829/update-statement-performance-in-sql-server/
+/** TODO */
+function updateMeal(daysAgo:number,foods:Food[]) {
+    // First test if insert works, then try this out
+    /*
+    UPDATE orders 
+    SET manager_id = (
+    CASE id
+    WHEN 1 THEN 21
+    WHEN 2 THEN 22
+    END
+    )
+    SET courier_id = (
+    CASE id
+    WHEN 1 THEN 301
+    WHEN 2 THEN 302
+    END
+    )
+    WHERE id IN (1,2)
+    */
+}
+function generateUpdateQueryString(foods:Food[]) {
+    // Steps
+        // SETs
+            // All nutrition fields individually
+/*
+        calories: {
+        servingSize: {
+        value: 1,
+        unit: "oz"
+        },
+        fatContent: {
+        carbohydrateContent: {
+        proteinContent: {
+      
+*/
+            // Each one needs to case by id
+                // Case [ID]
+                    // WHEN {ID} THEN {VALUE}
+        // WHERE
+            // ArtificialNutrition = 0 AND
+            // Nutritionless = 1
+            // Gonna be called daily, so the only time this will be 
+                // the case is for today's foods
+}
+
 // No longer need to check if the food has been gpt'd it already will be if it's been gotten
 // Write to the Food Table (add ArtificialNutrition and NullNutrition booleans to Food, make nutrition fields nullable and enter this data into them)
 /**
@@ -112,7 +167,7 @@ Approach to crash handling in the process:
  * 
  */
 
-export {getNutritionless,convertToNutritioned};
+export {getNutritionless,convertToNutritioned,updateMeal};
 
 /*
 53% of consumers will click away from a page that takes more than 3 seconds to load
@@ -128,10 +183,11 @@ Avoid lazy loading
 “Lazy loading is great for long web pages with lots of heavyweight content (like images, gifs, and videos) that are non-essential to the user experience on first load.”
 Not at all my site; my data is needed immediately
 If I can’t get it below 3 seconds, I could take psychological approaches to distracting from this
-https://www.google.com/search?q=using+psychology+to+distrcat+from+loading+times&rlz=1C1CHBD_en-GBUS1099US1099&oq=using+psychology+to+distrcat+from+loading+times&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIJCAEQIRgKGKABMgkIAhAhGAoYoAEyCQgDECEYChigAdIBCDU1MzdqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8
-https://medium.com/@WebdesignerDepot/4-tricks-to-make-load-times-feel-faster-788d2fee586b
-https://ux.stackexchange.com/questions/35734/if-you-cant-improve-loading-time-is-distracting-the-user-a-good-technique
-https://www.wired.com/2016/08/science-waiting-waiting-page-load/
+    One idea is splitting the loading screens; so like one then a break that seems to end it and then another one (only works for two tho)
+    https://www.google.com/search?q=using+psychology+to+distrcat+from+loading+times&rlz=1C1CHBD_en-GBUS1099US1099&oq=using+psychology+to+distrcat+from+loading+times&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIJCAEQIRgKGKABMgkIAhAhGAoYoAEyCQgDECEYChigAdIBCDU1MzdqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8
+    https://medium.com/@WebdesignerDepot/4-tricks-to-make-load-times-feel-faster-788d2fee586b
+    https://ux.stackexchange.com/questions/35734/if-you-cant-improve-loading-time-is-distracting-the-user-a-good-technique
+    https://www.wired.com/2016/08/science-waiting-waiting-page-load/
 
 
 https://blog.hubspot.com/website/lazy-loading-eager-loading

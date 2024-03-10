@@ -5,14 +5,14 @@ DROP TABLE Food
 
 CREATE TABLE Food (
   [ID] INT NOT NULL,
-  [Name] VARCHAR(35) NOT NULL,
+  [Name] NVARCHAR(50) NOT NULL,
   Calories FLOAT(24) NULL,
   Carbohydrates FLOAT(24) NULL,
   Protein FLOAT(24) NULL,
   Fat FLOAT(24) NULL,
   Tier TINYINT NOT NULL,
   ServingSize FLOAT(24) NULL,
-  ServingUnits VARCHAR(35) NULL,
+  ServingUnits NVARCHAR(50) NULL,
   Nutritionless BIT NULL,
   Vegetarian BIT NULL,
   Vegan BIT NULL,

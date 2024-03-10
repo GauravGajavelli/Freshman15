@@ -20,7 +20,7 @@ import * as users from './user_service';
 // GenerativeAIService
 import * as gen_ai from './generative_ai_service';
 // MealService (calculating, crudding foods, etc)
-import * as meals from './meal_service';
+// import * as meals from './meal_service';
 import type { FoodSquare } from "./constants_and_types";
 import type { Food } from './constants_and_types';
 
@@ -28,51 +28,51 @@ import type { Food } from './constants_and_types';
     // Plus every service will own some sql stuff (replacing all file stuff), that will be more efficient to move around than all the data at once
 
 // #region Create
-router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cratio/:pratio/', async function(req:any, res:any) {
-    // gung.FoodSquare = class {
-    //     constructor(foodo) {
-    //         this.food = foodo;
-    //         this.required = false;
-    //         this.banned = false;
-    //         this.quantity = 0;
-    //     }
-    // }
-    let board:any = req.body;
-    let vegetarian:string = req.params.vegetarian;
-    let vegan:string = req.params.vegan;
-    let glutenfree:string = req.params.glutenfree;
-    console.log("Gingko: "+parseInt(req.params.calories));
-    let calories:number = parseInt(req.params.calories)?parseInt(req.params.calories):750;
-    let fratio:number = parseInt(req.params.fratio)?parseInt(req.params.fratio):25;
-    let cratio:number = parseInt(req.params.cratio)?parseInt(req.params.cratio):55;
-    let pratio:number = parseInt(req.params.pratio)?parseInt(req.params.pratio):20;
-    let meal:FoodSquare[] = await meals.generateMeal(board,
-        vegetarian==="true",
-        vegan==="true",
-        glutenfree==="true",
-        calories,
-        fratio,
-        cratio,
-        pratio,
-        0.1, // +-lenience in macro ratios
-        false); // returns an array of the foods
-    for (let leniency = 0.1; leniency <= 1.5 && meal.length == 0; leniency += 0.1) {
-        // console.log("Cur Lenience: "+leniency);
-        meal = await meals.generateMeal(board,
-            vegetarian==="true",
-            vegan==="true",
-            glutenfree==="true",
-            calories,
-            fratio,
-            cratio,
-            pratio,
-            leniency,
-            true);
-    }
-    // TODO Implement algorithm for trying multiple methods before quitting
+// router.post('/generate_meal/:vegetarian/:vegan/:glutenfree/:calories/:fratio/:cratio/:pratio/', async function(req:any, res:any) {
+//     // gung.FoodSquare = class {
+//     //     constructor(foodo) {
+//     //         this.food = foodo;
+//     //         this.required = false;
+//     //         this.banned = false;
+//     //         this.quantity = 0;
+//     //     }
+//     // }
+//     let board:any = req.body;
+//     let vegetarian:string = req.params.vegetarian;
+//     let vegan:string = req.params.vegan;
+//     let glutenfree:string = req.params.glutenfree;
+//     console.log("Gingko: "+parseInt(req.params.calories));
+//     let calories:number = parseInt(req.params.calories)?parseInt(req.params.calories):750;
+//     let fratio:number = parseInt(req.params.fratio)?parseInt(req.params.fratio):25;
+//     let cratio:number = parseInt(req.params.cratio)?parseInt(req.params.cratio):55;
+//     let pratio:number = parseInt(req.params.pratio)?parseInt(req.params.pratio):20;
+//     let meal:FoodSquare[] = await meals.generateMeal(board,
+//         vegetarian==="true",
+//         vegan==="true",
+//         glutenfree==="true",
+//         calories,
+//         fratio,
+//         cratio,
+//         pratio,
+//         0.1, // +-lenience in macro ratios
+//         false); // returns an array of the foods
+//     for (let leniency = 0.1; leniency <= 1.5 && meal.length == 0; leniency += 0.1) {
+//         // console.log("Cur Lenience: "+leniency);
+//         meal = await meals.generateMeal(board,
+//             vegetarian==="true",
+//             vegan==="true",
+//             glutenfree==="true",
+//             calories,
+//             fratio,
+//             cratio,
+//             pratio,
+//             leniency,
+//             true);
+//     }
+//     // TODO Implement algorithm for trying multiple methods before quitting
 
-    res.send(meal);
-});
+//     res.send(meal);
+// });
 // #endregion
 
 // #region Read
@@ -94,12 +94,12 @@ router.get('/mealnames/:daysAgo/', async function(req:any, res:any) { // Will ad
         return;
     }
     let meals:string[] = [];
-    if (await scraping.hasMeals(daysAgo)) {
-        meals = await scraping.readMeals(daysAgo);
-    } else {
+    // if (await scraping.hasMealNames(daysAgo)) {
+    //     meals = await scraping.readMealNames(daysAgo);
+    // } else {
         meals = await scraping.getMealNames(daysAgo);
-        await scraping.writeMeals(daysAgo,meals);
-    }
+    //     scraping.writeMealNames(daysAgo,meals);
+    // }
     res.send(meals);
 });
 
@@ -116,14 +116,13 @@ router.get('/meal/:daysAgo/:mealstr', async function(req:any, res:any) { // Will
         return;
     }
     let toWrite:Food[] = [];
-    if (await scraping.hasMeal(daysAgo,mealstr)) {
-        toWrite = await scraping.readMeal(daysAgo,mealstr);
-        // scraping.newWriteDayData(daysAgo,toWrite);
-    } else {
-        console.log("Hung up my gloves");
+    // if (await scraping.hasMeal(daysAgo,mealstr)) {
+    //     toWrite = await scraping.readMeal(daysAgo,mealstr);
+    // } else {
+    //     console.log("Hung up my gloves");
         toWrite = await scraping.getMeal(daysAgo,mealstr);
         await scraping.writeMeal(daysAgo,mealstr,toWrite);
-    }
+    // }
 
     res.send(toWrite);
     return;
@@ -136,17 +135,15 @@ router.get('/meal_state/:daysAgo/:meal', async function(req:any, res:any) { // W
         return;
     }
     let toWrite:any = [];
-    if (await scraping.inDatabase
-        (daysAgo)) {
-        toWrite = await scraping.outDatabase(daysAgo);
-        // scraping.newWriteDayData(daysAgo,toWrite);
-    } else {
-        console.log("Hung up my gloves");
-        toWrite = await scraping.getMenusAndMeals(daysAgo);
-        await scraping.newWriteDayData(daysAgo,toWrite);
-    }
-    // If the gpt file exists, merge these together and send it as meals out
-    // If it's already been done, then don't either
+    // if (await scraping.inDatabase
+    //     (daysAgo)) {
+    //     toWrite = await scraping.outDatabase(daysAgo);
+    //     // scraping.newWriteDayData(daysAgo,toWrite);
+    // } else {
+    //     console.log("Hung up my gloves");
+    //     toWrite = await scraping.getMenusAndMeals(daysAgo);
+    //     await scraping.newWriteDayData(daysAgo,toWrite);
+    // }
 
     res.send(toWrite);
     return;
@@ -176,21 +173,18 @@ router.put('/generate_artificial_data/:daysAgo/:mealstr',async function(req:any,
         res.send("Empty meal string: "+mealstr);
         return;
     }
+    let foods:Food[] = await scraping.readMeal(daysAgo,mealstr);
     // now it's gpt time
     // get all the nutritionless from chosen file
-    let nutritionlesses:any = await gen_ai.getNutritionless(daysAgo,);
+    let nutritionlesses:any = await gen_ai.getNutritionless(daysAgo,foods);
     // get all nutritions from the nutritionlesses
         // Key considerations
             // Failing loudly
     // returns all of the nutritions by id
         // this way we can iterate through and match up with raw meal easily
     await gen_ai.convertToNutritioned(nutritionlesses);
-    let wrote:boolean = gen_ai.writeGenerated(daysAgo,nutritionlesses); /** TODO Make sproc thats updates foods as artificial */
-    if (!wrote) {
-        res.send("Error writing GPT data");
-    } else {
-        res.send("GPT data saved successfully!");
-    }
+    gen_ai.updateMeal(daysAgo,nutritionlesses); /** TODO Make sproc thats updates foods */
+    res.send(foods);
 });
 // #endregion
 
