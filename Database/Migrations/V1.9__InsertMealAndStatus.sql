@@ -14,7 +14,7 @@ ROLLBACK TRANSACTION;
 RETURN(1);
 END
 Set @restaurantmealid = @@IDENTITY;
-EXEC	@return_value = InsertRestaurantMealLoadStatus @RestaurantMealID = @restaurantmealid, @status = 'Unscraped';
+EXEC	@return_value = InsertRestaurantMealLoadStatus @RestaurantMealID = @restaurantmealid, @status = 'Loaded';
 IF (@return_value <> 0)
 BEGIN
 ROLLBACK TRANSACTION;

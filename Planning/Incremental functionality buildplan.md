@@ -58,6 +58,8 @@ Current Epic: Lazy Loading
   1. Create loading into Meal/Load Status Tables
   2. Scrape specific meals
   3. Loading into Meal/MealStatus
+     a. Failed Meal insert/Unscraped are not stored in the db; they both should elicit the same response
+     b. No Meal doesn't really make sense; then it just shouldn't be in the db
   4. Specific meal getting
    (honestly if I'm switching to eager, should I bother with the last two? If lazy is fast enough ig?)
   5. Backend pinging for load

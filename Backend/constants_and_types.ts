@@ -1,4 +1,9 @@
 export const archivedBonSite: string = "files/old_bon_site.html";
+export enum RestaurantMealsLoadStatus {
+    Loaded = 0,
+    Generated,
+    FailedGenerated
+}
 export enum foodTier {
     Special = 0,
     Additional,

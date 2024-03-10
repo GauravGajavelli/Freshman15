@@ -17,7 +17,9 @@
     import type { nutritionDetails } from "./constants_and_types";
     import { foodTier } from "./constants_and_types";
     import { archivedBonSite } from "./constants_and_types";
+    import {RestaurantMealsLoadStatus} from "./constants_and_types";
     import { convertToNutritioned } from './generative_ai_service';
+import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
     
     // ScrapingService
     // Valid numbers of days ago: -1 < n <= whatever
@@ -72,11 +74,39 @@
         return toRet;
     }
     async function hasMeal (daysAgo:number,mealstr:string):Promise<boolean> {
-        // throw "Implement me";
-        return false;
+        return true;
     }
     async function readMeal (daysAgo:number,mealstr:string):Promise<Food[]> {
-        throw "Implement me";
+        var config = JSON.parse(fs.readFileSync("../Database/connectivity_config.json"));
+        config.options.rowCollectionOnRequestCompletion = true;
+        config.options.rowCollectionOnDone = true;
+
+        const connection = new ConnectionM(config);
+        let prom:Promise<any> = connectPromise(connection);
+        let toRet:Food[] = [];
+        await prom;
+        let request = getRestaurantMealID(daysAgo,mealstr, connection);
+        request.on('error', function (err:any) {
+            throw err;
+        });
+        let rows1:any = await requestDonePromise(request);
+        let restaurantmealid:number = rows1[0][0].value; // first (and only) row, first (and only) column
+        console.log("restaurantmealid: "+restaurantmealid);
+
+        const connection2 = new ConnectionM(config);
+        let prom2:Promise<any> = connectPromise(connection2);
+        await prom2;
+        let request2 = readMealFromTable(restaurantmealid, connection);
+        let rows2:any = await requestDonePromise (request2);
+        rows2.forEach((columns:any) => {
+            let toPush:Food = 
+            convertFromFoodSchema(columns,mealstr);
+            toRet.push(toPush);
+        });
+        
+        // Here's the magic: the then() function returns a new promise, different from the original:
+            // So if we await that then we're good on everything in the thens
+        return toRet;
     }
     /** Write to RestaurantMeals and RestaurantMealsLoadStatus too */
     function writeMeal (daysAgo:number,mealstr:string,foods:Food[]):Promise<any> {
@@ -95,7 +125,19 @@
                 let prom2:Promise<any> = connectPromise(connection2);
                 prom2.then(() => {
                     console.log("Ready to bulk");
-                    bulkLoadFood(foods, restaurantmealid, connection2)
+                    bulkLoadFood(foods, restaurantmealid, connection2);
+                    connection2.on('error', function (err:any) {
+                        // bulk load failed
+                        if (err) {
+                            // delete meal and mealstatus
+                            const connection3 = new ConnectionM(config);
+                            let prom3:Promise<any> = connectPromise(connection3);
+                            prom3.then(() => {
+                                deleteMealAndStatus(restaurantmealid,connection3);
+                            });
+                            throw err;
+                        }
+                    });
                 });
             });
         })
@@ -206,9 +248,108 @@
         };
         return toRet;
     }
+    function food_factory_with_artificial_nutrition (id: number, name: string, calories:number, carbs: number, rote: number, phat: number, melie:string,tear:foodTier, servingSize:number,servingUnits:string,nutritionl:boolean,v:boolean,ve:boolean,gf:boolean,art_nut:boolean):Food {
+        const nDetails: nutritionDetails = {
+            calories: {
+            value: calories,
+            unit: "string"
+            },
+            servingSize: {
+            value: servingSize,
+            unit: servingUnits
+            },
+            fatContent: {
+            value: phat,
+            unit: "string"
+            },
+            carbohydrateContent: {
+            value: carbs,
+            unit: "string"
+            },
+            proteinContent: {
+            value: rote,
+            unit: "string"
+            }
+        };
+        const toRet: Food = {
+            id: id,
+            label: name,
+            description: "string",
+            short_name: "string",
+            raw_cooked: 1010101,
+            meal:melie,
+            tier:tear,
+            nutritionless:nutritionl,
+            artificial_nutrition:art_nut,
+            nutrition: {
+                kcal: calories,
+                well_being: 1010101,
+            },
+            station_id: 1010101,
+            station: "string",
+            nutrition_details: nDetails,
+            ingredients: ["string[]"],
+            sub_station_id: 1010101,
+            sub_station: "string",
+            sub_station_order: 1010101,
+            monotony: {},
+            vegetarian:v,
+            vegan:ve,
+            glutenfree:gf
+        };
+        return toRet;
+    }
+    function getRestaurantMealID(day:number, meal:string, connection:any):any {
+        console.log("Dio: "+formattedDate(day));
+        console.log("Meal: "+meal);
+        let sql = 'select RestaurantMealID from RestaurantMeal where meal = @meal AND day = @date';
+        let request = new RequestM(sql, function (err:any, rowCount:any, rows:any) {
+            if (err) {
+                throw err;
+            }
+        });
+
+        request.addParameter('date', types.Date, new Date(formattedDate(day)));
+        request.addParameter('meal', types.VarChar, meal);
+
+          // Emits a 'DoneInProc' event when completed.
+  request.on('row', (columns:any) => {
+    columns.forEach((column:any) => {
+      if (column.value === null) {
+        console.log('NULL');
+      } else {
+        console.log(column.value);
+      }
+    });
+  });
+
+  request.on('done', (rowCount:any) => {
+    console.log('Done got fired instead of doneInProc! I swear');
+  });
+
+  request.on('doneInProc', (rowCount:any, more:any, rows:any) => {
+    console.log(rowCount + ' rows returned from doneInProc');
+  });
+
+
+        connection.execSql(request);
+        return request;
+    }
+    function readMealFromTable (restaurantmealid:number,connection:any):any {
+        let sql = 'select * from Food where RestaurantMealID = @mealid';
+        let request = new RequestM(sql, function (err:any, rowCount:any, rows:any) {
+            if (err) {
+                throw err;
+            }
+        });
+
+        request.addParameter('mealid', types.Int, restaurantmealid);
+
+        connection.execSql(request);
+        return request;
+    }
     // Returns id of meal created
     function insertMealAndStatus(day:number, meal:string, connection:any):any {
-        console.log("Insert status and meal start");
         const request = new RequestM('insertMealAndStatus', (err:any, rowCount:any) => {
             if (err) { 
                 // throw err;
@@ -229,12 +370,27 @@
 
         return request;
     }
+
+    // Call upon failed bulk load
+    function deleteMealAndStatus(restaurantmealid:number,connection:any) {
+        const request = new RequestM('deleteMealAndStatus', (err:any, rowCount:any) => {
+            if (err) { 
+                throw err;
+            }
+            connection.close();
+        });    
+        request.addParameter('restaurantmealid', types.Int, restaurantmealid);
+    
+        connection.callProcedure(request);
+    
+        return request;
+    }
     /** TODO Update to use bulk load, add the nutritionless and artificial fields; for null check fails change table to allow nulls */
     function bulkLoadFood(foods:Food[], restaurantmealid:number, connection:any) {
         const options = { keepNulls: true };
         // instantiate - provide the table where you'll be inserting to, options and a callback
         const bulkLoad = connection.newBulkLoad('Food', options, function (error:any, rowCount:any) {
-            console.log("error mama: "+error);
+            console.log("error: "+error);
             console.log('inserted %d rows', rowCount);
         });
 
@@ -287,6 +443,83 @@
         }
         return toRet;
     }
+
+    function convertFromFoodSchema(row:any,mealstr:string):Food {
+            let id = 0;
+            let name = "";
+            let calories = 0;
+            let carbs = 0;
+            let rote = 0;
+            let phat = 0;
+
+            let tier = 0;
+
+            let nutritionless = false;
+            let artificial_nutrition = false;
+
+            let servingSize = 0;
+            let servingUnits = "";
+            let v = false;
+            let ve = false;
+            let gf = false;
+
+            // let restaurantmealid = 0;
+        row.forEach((column:any) => {
+            let colName:string = column.metadata.colName;
+            switch (colName) {
+                case 'ID':
+                    id = column.value;
+                    break;
+                case 'Name':
+                    name = column.value;
+                    break;
+                case 'Calories':
+                    calories = column.value;
+                    break;
+                case 'Carbohydrates':
+                    carbs = column.value;
+                    break;
+                case 'Protein':
+                    rote = column.value;
+                    break;
+                case 'Fat':
+                    phat = column.value;
+                    break;
+                case 'Tier':
+                    tier = column.value;
+                    break;
+                case 'ServingSize':
+                    servingSize = column.value;
+                    break;
+                case 'ServingUnits':
+                    servingUnits = column.value;
+                    break;
+                case 'Nutritionless':
+                    nutritionless = column.value;
+                    break;
+                case 'Vegetarian':
+                    v = column.value;
+                    break;
+                case 'Vegan':
+                    ve = column.value;
+                    break;
+                case 'GlutenFree':
+                    gf = column.value;
+                    break;
+                case 'ArtificialNutrition':
+                    artificial_nutrition = column.value;
+                    break;
+                case 'RestaurantMealID':
+                    // restaurantmealid = column.value;
+                    break;
+                default:
+                  console.log(`New column name?!: ${colName}`);
+              }
+        });
+            // the front end should also recoil in horror, separately
+                // There should be a strikethrough /graying out of any non-veg in reqs or general list
+            return food_factory_with_artificial_nutrition(id,name,calories,carbs,rote,phat,mealstr,tier,servingSize,servingUnits,false,v,ve,gf,artificial_nutrition);
+    }
     //#endregion
     
     //#region MealNames
@@ -296,7 +529,7 @@
         const page = await getPage(daysAgo);
         const nn = await page.$$(".panel.s-wrapper.site-panel--daypart"); // all meals in a day
         for (let i = 0; i < nn.length; i++) {
-            const id = ( await page.evaluate((el: { getAttribute: (arg0: string) => any; }) => el.getAttribute("data-id"), nn[i]));
+            const id = ( await page.evaluate((el: { getAttribute: (arg0: string) => any; }) => el.getAttribute("id"), nn[i]));
             console.log(id);
             toRet.push(id);
         }
@@ -377,6 +610,19 @@
                 }
                 console.log("Connection Succeeded!");
                 resolve("Connection Succeeded!");
+            });
+        });
+    }
+    // Has both done and doneInProc to cover all of the bases
+    const requestDonePromise = (request:any) => {
+        return new Promise((resolve, reject) => {
+            request.on('doneInProc',function (rowCount:any, more:any, rows:any) {
+                console.log('Jared Dunn (In Proc)!');
+                resolve(rows);
+            });
+            request.on('done',function (rowCount:any, more:any, rows:any) {
+                console.log('Jared Dunn (NOT In Proc)!');
+                resolve(rows);
             });
         });
     }
