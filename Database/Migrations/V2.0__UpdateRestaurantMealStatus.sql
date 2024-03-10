@@ -1,7 +1,8 @@
 USE [Freshman15]
 GO
+
 -- Call with all the different foods, looping through the dates and meal
-CREATE OR ALTER PROCEDURE updateMealAndStatus (@restaurantmealid INT,@status VARCHAR(10))
+CREATE OR ALTER PROCEDURE updateRestaurantMealStatus (@restaurantmealid INT,@status VARCHAR(10))
 AS
 BEGIN
 BEGIN TRANSACTION

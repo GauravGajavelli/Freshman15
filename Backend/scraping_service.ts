@@ -19,7 +19,7 @@
     import { archivedBonSite } from "./constants_and_types";
     import {RestaurantMealsLoadStatus} from "./constants_and_types";
     import { convertToNutritioned } from './generative_ai_service';
-import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
+    import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
     
     // ScrapingService
     // Valid numbers of days ago: -1 < n <= whatever
@@ -35,7 +35,10 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
         if (!nutrition) {
             return null;
         }
-        return parseFloat(nutrition)?parseFloat(nutrition):"0.5";
+        if (nutrition = "<1") {
+            return "0.5";
+        }
+        return parseFloat(nutrition);
     }
     function booleanToBit(bool:boolean) {
         return bool?1:0;
@@ -73,9 +76,8 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
         await getFoods(page, mealstr,foodTier.Condiment, toRet,menu);
         return toRet;
     }
-    /** TODO */
     async function hasMeal (daysAgo:number,mealstr:string):Promise<boolean> {
-        const connection = await getNewConnection();
+        const connection = await getNewConnection(false,true);
         let request = getRestaurantMealID(daysAgo,mealstr, connection);
         request.on('error', function (err:any) {
             throw err;
@@ -86,7 +88,7 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
     async function readMeal (daysAgo:number,mealstr:string):Promise<Food[]> {
         let toRet:Food[] = [];
 
-        const connection = await getNewConnection();
+        const connection = await getNewConnection(false,true);
         let request = getRestaurantMealID(daysAgo,mealstr, connection);
         request.on('error', function (err:any) {
             throw err;
@@ -94,7 +96,7 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
         let rows1:any = await execSqlRequestDonePromise(request);
         let restaurantmealid:number = rows1[0][0].value; // first (and only) row, first (and only) column
 
-        const connection2 = await getNewConnection();
+        const connection2 = await getNewConnection(false,true);
         let request2 = readMealFromTable(restaurantmealid, connection2);
         let rows2:any = await execSqlRequestDonePromise (request2);
         rows2.forEach((columns:any) => {
@@ -109,7 +111,7 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
     }
     /** Write to RestaurantMeals and RestaurantMealsLoadStatus too */
     async function writeMeal (daysAgo:number,mealstr:string,foods:Food[]):Promise<any> {
-        let connection = await getNewConnection();
+        let connection = await getNewConnection(false,false);
 
         let request = insertMealAndStatus(daysAgo,mealstr, connection);
         request.on('error', function (err:any) {
@@ -117,14 +119,14 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
         });
         let restaurantmealid:any = await callProcedureRequestOutputParamPromise (request);
 console.log("rat meal: "+restaurantmealid);
-        const connection2 = await getNewConnection();
+        const connection2 = await getNewConnection(false,false);
         bulkLoadFood(foods, restaurantmealid, connection2); // it's okay if we don't await this because for inserts we just gotta run this in the background
                                                             // Also bulkload doesn't have any events
         connection2.on('error', async function (err:any) {
             // bulk load failed
             if (err) {
                 // delete meal and mealstatus
-                const connection3 = await getNewConnection();
+                const connection3 = await getNewConnection(false,false);
                 deleteMealAndStatus(restaurantmealid,connection3);
                 throw err;
             }
@@ -352,7 +354,6 @@ console.log("rat meal: "+restaurantmealid);
     
         return request;
     }
-    /** TODO Update to use bulk load, add the nutritionless and artificial fields; for null check fails change table to allow nulls */
     function bulkLoadFood(foods:Food[], restaurantmealid:number, connection:any) {
         const options = { keepNulls: true };
         // instantiate - provide the table where you'll be inserting to, options and a callback
@@ -485,7 +486,7 @@ console.log("rat meal: "+restaurantmealid);
         });
             // the front end should also recoil in horror, separately
                 // There should be a strikethrough /graying out of any non-veg in reqs or general list
-            return food_factory_with_artificial_nutrition(id,name,calories,carbs,rote,phat,mealstr,tier,servingSize,servingUnits,false,v,ve,gf,artificial_nutrition);
+            return food_factory_with_artificial_nutrition(id,name,calories,carbs,rote,phat,mealstr,tier,servingSize,servingUnits,nutritionless,v,ve,gf,artificial_nutrition);
     }
     //#endregion
     
@@ -570,10 +571,11 @@ console.log("rat meal: "+restaurantmealid);
     //#endregion
     
     //#region Connectivity
-    async function getNewConnection():Promise<any> {
+    // Options determine whether the callbacks for the constructor and done/doneProc/doneInProc will have the rows returned to the callback
+    async function getNewConnection(rowCollectionOnRequestCompletion:boolean,rowCollectionOnDone:boolean):Promise<any> {
         var config = JSON.parse(fs.readFileSync("../Database/connectivity_config.json"));
-        config.options.rowCollectionOnRequestCompletion = true;
-        config.options.rowCollectionOnDone = true;
+        config.options.rowCollectionOnRequestCompletion = rowCollectionOnRequestCompletion;
+        config.options.rowCollectionOnDone = rowCollectionOnDone;
         let toRet = new ConnectionM(config);
         let prom:Promise<any> = connectPromise(toRet);
         await prom;
@@ -599,15 +601,15 @@ console.log("rat meal: "+restaurantmealid);
                 // are returned during a complex procedure)
                 // But this should be fine so long as it's used for execSql requests and not callProcedure or something
             request.on('doneInProc',function (rowCount:any, more:any, rows:any) {
-                console.log('Jared Dunn (In Proc)!');
+                // console.log('Jared Dunn (In Proc)!');
                 resolve(rows);
             });
             request.on('done',function (rowCount:any, more:any, rows:any) {
-                console.log('Jared Dunn (NOT Proc)!');
+                // console.log('Jared Dunn (NOT Proc)!');
                 resolve(rows);
             });
             request.on('doneProc',function (rowCount:any, more:any, rows:any) {
-                console.log('Jared Dunn (Proc)!');
+                // console.log('Jared Dunn (Proc)!');
                 resolve(rows);
             });
         });
@@ -626,4 +628,4 @@ console.log("rat meal: "+restaurantmealid);
     }    
     //#endregion
     
-    export {formattedDate,scrapingUp,writeArchive,getMealNames,hasMealNames,readMealNames,writeMealNames,getMeal,hasMeal,readMeal,writeMeal,connectPromise}
+    export {formattedDate,scrapingUp,writeArchive,getMealNames,hasMealNames,readMealNames,writeMealNames,getMeal,hasMeal,readMeal,writeMeal,getNewConnection,getRestaurantMealID,execSqlRequestDonePromise,booleanToBit}

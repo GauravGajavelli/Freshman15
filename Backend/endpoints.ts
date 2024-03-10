@@ -93,13 +93,17 @@ router.get('/mealnames/:daysAgo/', async function(req:any, res:any) { // Will ad
         return;
     }
     let mealnames:string[] = [];
-    if (await scraping.hasMealNames(daysAgo)) {
-        mealnames = await scraping.readMealNames(daysAgo);
-    } else {
-        mealnames = await scraping.getMealNames(daysAgo);
-        await scraping.writeMealNames(daysAgo,mealnames);
-    }
-    res.send(mealnames);
+    try {
+        if (await scraping.hasMealNames(daysAgo)) {
+            mealnames = await scraping.readMealNames(daysAgo);
+        } else {
+            mealnames = await scraping.getMealNames(daysAgo);
+            await scraping.writeMealNames(daysAgo,mealnames);
+        }
+        res.send(mealnames);
+    } catch (error) {
+        res.status(500).send('500 Internal Server Error');
+    };
 });
 
 router.get('/meal/:daysAgo/:mealstr', async function(req:any, res:any) { // Will add restaurant
@@ -115,27 +119,33 @@ router.get('/meal/:daysAgo/:mealstr', async function(req:any, res:any) { // Will
     }
     let toWrite:Food[] = [];
     let writeSuccess:boolean = true;
-    if (await scraping.hasMeal(daysAgo,mealstr)) {
-        toWrite = await scraping.readMeal(daysAgo,mealstr);
-    } else {
-        toWrite = await scraping.getMeal(daysAgo,mealstr);
-        writeSuccess = await scraping.writeMeal(daysAgo,mealstr,toWrite);
-    }
-    if (writeSuccess) {
-        res.send(toWrite);
-    } else {
-        res.send("Failed to write meal!");
-    }
-    return;
+    try {
+        if (await scraping.hasMeal(daysAgo,mealstr)) {
+            toWrite = await scraping.readMeal(daysAgo,mealstr);
+        } else {
+            toWrite = await scraping.getMeal(daysAgo,mealstr);
+            writeSuccess = await scraping.writeMeal(daysAgo,mealstr,toWrite);
+        }
+        if (writeSuccess) {
+            res.send(toWrite);
+        } else {
+            res.send("Failed to write meal!");
+        }
+    } catch (error) {
+        res.status(500).send('500 Internal Server Error');
+    };
 });
 /** TODO Implement, will get the state of the meal giving the FSM of the frontend loading the info it needs. Will query RestaurantMealStatus tables for this data */
-router.get('/meal_state/:daysAgo/:meal', async function(req:any, res:any) { // Will add restaurant
+    // check has meal, otherwise put unscraped
+    // Get the meal status otherwise
+router.get('/meal_status/:daysAgo/:meal', async function(req:any, res:any) { // Will add restaurant
     let daysAgo:number = req.params.daysAgo;
     if (daysAgo < -1) {
         res.send("Invalid day: "+daysAgo);
         return;
     }
     let toWrite:any = [];
+    try {
     // if (await scraping.inDatabase
     //     (daysAgo)) {
     //     toWrite = await scraping.outDatabase(daysAgo);
@@ -147,7 +157,9 @@ router.get('/meal_state/:daysAgo/:meal', async function(req:any, res:any) { // W
     // }
 
     res.send(toWrite);
-    return;
+    } catch (error) {
+        res.status(500).send('500 Internal Server Error');
+    };
 });
 // #endregion
 
@@ -161,8 +173,7 @@ router.put('/update_archive/',async function(req:any,res:any) {
             res.send("Success writing archive");
         }
 });
-// Will be called after pinging reveals foods have been scraped
-/** TODO */
+// Will be called after foods have been scraped
 router.put('/generate_artificial_data/:daysAgo/:mealstr',async function(req:any,res:any) {
     let daysAgo:number = req.params.daysAgo;
     if (daysAgo < -1) {
@@ -174,18 +185,23 @@ router.put('/generate_artificial_data/:daysAgo/:mealstr',async function(req:any,
         res.send("Empty meal string: "+mealstr);
         return;
     }
-    let foods:Food[] = await scraping.readMeal(daysAgo,mealstr);
-    // now it's gpt time
-    // get all the nutritionless from chosen file
-    let nutritionlesses:any = await gen_ai.getNutritionless(daysAgo,foods);
-    // get all nutritions from the nutritionlesses
-        // Key considerations
-            // Failing loudly
-    // returns all of the nutritions by id
-        // this way we can iterate through and match up with raw meal easily
-    await gen_ai.convertToNutritioned(nutritionlesses);
-    gen_ai.updateMeal(daysAgo,nutritionlesses); /** TODO Make sproc thats updates foods */
-    res.send(foods);
+    try {
+        if (await scraping.hasMeal(daysAgo,mealstr)) {
+            let foods:Food[] = await scraping.readMeal(daysAgo,mealstr);
+            let nutritionlesses:Food[] = gen_ai.getNutritionless(daysAgo,foods);
+            await gen_ai.convertToNutritioned(nutritionlesses);
+            let success = await gen_ai.updateMeal(nutritionlesses,daysAgo,mealstr);
+            if (success) {
+                res.send(nutritionlesses);
+            } else {
+                res.send("Failed to generate artificial nutrition");
+            }
+        } else {
+            res.send("Don't have the meal yet");
+        }
+    } catch (error) {
+        res.status(500).send('500 Internal Server Error');
+    };
 });
 // #endregion
 

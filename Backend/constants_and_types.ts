@@ -1,6 +1,7 @@
 export const archivedBonSite: string = "files/old_bon_site.html";
 export enum RestaurantMealsLoadStatus {
-    Loaded = 0,
+    Unscraped = 0,
+    Loaded,
     Generated,
     FailedGenerated
 }

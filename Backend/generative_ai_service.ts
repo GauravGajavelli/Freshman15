@@ -5,21 +5,20 @@ var types = require('tedious').TYPES;
 var ConnectionM = require('tedious').Connection;
 var RequestM = require('tedious').Request;
 
-import { formattedDate } from "./scraping_service";
-import { connectPromise } from "./scraping_service";
-import type { nutritionDetails } from "./constants_and_types";
+import { getNewConnection } from "./scraping_service";
+import { getRestaurantMealID } from "./scraping_service";
+import { execSqlRequestDonePromise } from "./scraping_service";
+import { booleanToBit } from "./scraping_service";
+import { RestaurantMealsLoadStatus, type nutritionDetails } from "./constants_and_types";
 import type { Food } from "./constants_and_types";
 
 // GenerativeAIService
 // return all of the food objects from a given dayinfo that are nutritionless
-/** TODO  */ // Refactor to only do this for a single meal
-async function getNutritionless(daysAgo:number, foods:Food[]):Promise<any> {
-    let toRet:any = {};
+function getNutritionless(daysAgo:number, foods:Food[]):Food[] {
+    let toRet:Food[] = [];
     for (let i = 0; i < foods.length; i++) {
         if (foods[i].nutritionless) {
-            const id:number = foods[i]["id"]/* count.toString()*/;
-            toRet[id] = foods[i];
-            // count++;
+            toRet.push(foods[i]);
         }
     }
     return toRet;
@@ -63,6 +62,18 @@ async function artificialToNatural(artificial:any):Promise<nutritionDetails> {
         unit: "string"
         }
     };
+    if (Object.is(NaN, nDetails.calories.value)) {
+        nDetails.calories.value = 0;
+    }
+    if (Object.is(NaN, nDetails.fatContent.value)) {
+        nDetails.fatContent.value = 0;
+    }
+    if (Object.is(NaN, nDetails.carbohydrateContent.value)) {
+        nDetails.carbohydrateContent.value = 0;
+    }
+    if (Object.is(NaN, nDetails.proteinContent.value)) {
+        nDetails.proteinContent.value = 0;
+    }
     return nDetails;
 }
 // GenerativeAIService
@@ -101,41 +112,113 @@ async function getArtificialNutrition(name:string):Promise<any> {
 // The key is minimizing the number of queries: I think we can get it all in one update
 // If it's too slow, try an approach splitting into a couple requests, analogous to pagniation
     // https://www.mssqltips.com/sqlservertip/5829/update-statement-performance-in-sql-server/
-/** TODO */
-function updateMeal(daysAgo:number,foods:Food[]) {
-    // First test if insert works, then try this out
-    /*
-    UPDATE orders 
-    SET manager_id = (
-    CASE id
-    WHEN 1 THEN 21
-    WHEN 2 THEN 22
-    END
-    )
-    SET courier_id = (
-    CASE id
-    WHEN 1 THEN 301
-    WHEN 2 THEN 302
-    END
-    )
-    WHERE id IN (1,2)
-    */
+
+async function updateMeal(foods:Food[],daysAgo:number,mealstr:string):Promise<boolean> {
+    const connection = await getNewConnection(false,true);
+    let request = getRestaurantMealID(daysAgo,mealstr, connection);
+    request.on('error', function (err:any) {
+        throw err;
+    });
+    let rows1:any = await execSqlRequestDonePromise(request);
+    let restaurantmealid:number = rows1[0][0].value; // first (and only) row, first (and only) column
+    
+    console.log("kadokana: "+restaurantmealid);
+    
+    const connection2 = await getNewConnection(false,false);
+    let request2 = updateMealFromTable(foods, restaurantmealid, connection2);
+    await execSqlRequestDonePromise (request2);
+    request2.on('error', async function (err:any) {
+        const connection3 = await getNewConnection(false,false);
+        let request3 = updateMealStatusFromTable(restaurantmealid,RestaurantMealsLoadStatus.FailedGenerated, connection3);
+        await execSqlRequestDonePromise (request3);
+        request3.on('error', function (err:any) {
+            throw err;
+        });
+        throw err;
+    });
+
+    const connection3 = await getNewConnection(false,false);
+    let request3 = updateMealStatusFromTable(restaurantmealid,RestaurantMealsLoadStatus.Generated, connection3);
+    await execSqlRequestDonePromise (request3);
+    request3.on('error', function (err:any) {
+        throw err;
+    });
+    return true;
 }
-function generateUpdateQueryString(foods:Food[]) {
+
+function updateMealStatusFromTable (restaurantmealid:number,status:RestaurantMealsLoadStatus,connection:any):any {
+    let sql = "UPDATE RestaurantMealLoadStatus SET [STATUS]=@status WHERE RestaurantMealLoadStatusID=@restaurantmealid";
+    let request = new RequestM(sql, function (err:any, rowCount:any, rows:any) {
+        if (err) {
+            throw err;
+        }
+    });
+
+    request.addParameter('status', types.VarChar, RestaurantMealsLoadStatus[status]);
+    request.addParameter('restaurantmealid', types.Int, restaurantmealid);
+
+    connection.execSql(request);
+    return request;
+}
+
+function updateMealFromTable (foods:Food[],restaurantmealid:number,connection:any):any {
+    let sql = generateUpdateQueryString(foods,restaurantmealid);
+    console.log(sql);
+    let request = new RequestM(sql, function (err:any, rowCount:any, rows:any) {
+        if (err) {
+            throw err;
+        }
+    });
+
+    connection.execSql(request);
+    return request;
+}
+/*
+UPDATE orders 
+SET manager_id = (
+CASE id
+WHEN 1 THEN 21
+WHEN 2 THEN 22
+END
+)
+SET courier_id = (
+CASE id
+WHEN 1 THEN 301
+WHEN 2 THEN 302
+END
+)
+WHERE id IN (1,2)
+*/
+function generateUpdateQueryString(foods:Food[],restaurantmealid:number) {
+    let toRet:string = ""; // apparently js uses ropes; building strings like this ain't too bad
+    let queryObject:any = {
+        'Calories':"",
+        'Carbohydrates':"",
+        'Protein':"",
+        'Fat':"",
+        'ServingSize':"",
+        'ServingUnits':"",
+        'Nutritionless':"",
+        'ArtificialNutrition':""
+    };
+    let keys = Object.keys(queryObject);
+    for (let key in keys) {
+        queryObject[keys[key]] += `UPDATE Food\nSET ${keys[key]} = \n`;
+        queryObject[keys[key]] += `CASE \n`;
+    }
+    for (let i:number = 0; i < foods.length; i++) {
+        // Updates by reference as long as you don't reassign argument: https://stackoverflow.com/questions/518000/is-javascript-a-pass-by-reference-or-pass-by-value-language
+        let food = foods[i];
+        updateQueryObject(queryObject,food);
+    }
+    for (let key in keys) {
+        toRet += queryObject[keys[key]];
+        toRet += `END\nWHERE RestaurantMealID = ${restaurantmealid}\n`;
+    }
+    return toRet;
     // Steps
         // SETs
             // All nutrition fields individually
-/*
-        calories: {
-        servingSize: {
-        value: 1,
-        unit: "oz"
-        },
-        fatContent: {
-        carbohydrateContent: {
-        proteinContent: {
-      
-*/
             // Each one needs to case by id
                 // Case [ID]
                     // WHEN {ID} THEN {VALUE}
@@ -144,8 +227,37 @@ function generateUpdateQueryString(foods:Food[]) {
             // Nutritionless = 1
             // Gonna be called daily, so the only time this will be 
                 // the case is for today's foods
+            // RestaurantMealID = restaurantmealid
+                // This is better; allows this to be reused for other updates
 }
-
+function updateQueryObject(queryObject:any,food:Food):void {
+    let keys = Object.keys(queryObject);
+    for (let key in keys) {
+        queryObject[keys[key]] += `WHEN [id] = ${food.id} THEN ${getSchemaProperty(food,keys[key])}\n`;
+    }
+}
+function getSchemaProperty(food:Food,colName:string):any {
+    switch (colName) {
+        case 'Calories':
+            return food.nutrition_details.calories.value;
+        case 'Carbohydrates':
+            return food.nutrition_details.carbohydrateContent.value;
+        case 'Protein':
+            return food.nutrition_details.proteinContent.value;
+        case 'Fat':
+            return food.nutrition_details.fatContent.value;
+        case 'ServingSize':
+            return food.nutrition_details.servingSize.value;
+        case 'ServingUnits':
+            return '\''+food.nutrition_details.servingSize.unit+'\'';
+        case 'Nutritionless':
+            return booleanToBit(food.nutritionless);
+        case 'ArtificialNutrition':
+            return booleanToBit(food.artificial_nutrition);
+        default:
+          console.log(`This column name has nothing to do with artificial nutrition update: ${colName}`);
+    }
+}
 // No longer need to check if the food has been gpt'd it already will be if it's been gotten
 // Write to the Food Table (add ArtificialNutrition and NullNutrition booleans to Food, make nutrition fields nullable and enter this data into them)
 /**
