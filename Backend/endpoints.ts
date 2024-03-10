@@ -86,24 +86,22 @@ router.get('/scraping_up/', async function(req:any, res:any) {
     res.send(up?"public scraping is up":"public scraping is down");
 });
 // Returns strings of valid meals for the given restaurant
-/** TODO Implement */
 router.get('/mealnames/:daysAgo/', async function(req:any, res:any) { // Will add restaurant
     let daysAgo:number = req.params.daysAgo;
     if (daysAgo < -1) {
         res.send("Invalid day: "+daysAgo);
         return;
     }
-    let meals:string[] = [];
-    // if (await scraping.hasMealNames(daysAgo)) {
-    //     meals = await scraping.readMealNames(daysAgo);
-    // } else {
-        meals = await scraping.getMealNames(daysAgo);
-    //     scraping.writeMealNames(daysAgo,meals);
-    // }
-    res.send(meals);
+    let mealnames:string[] = [];
+    if (await scraping.hasMealNames(daysAgo)) {
+        mealnames = await scraping.readMealNames(daysAgo);
+    } else {
+        mealnames = await scraping.getMealNames(daysAgo);
+        await scraping.writeMealNames(daysAgo,mealnames);
+    }
+    res.send(mealnames);
 });
 
-/** TODO Implement */
 router.get('/meal/:daysAgo/:mealstr', async function(req:any, res:any) { // Will add restaurant
     let daysAgo:number = req.params.daysAgo;
     if (daysAgo < -1) {

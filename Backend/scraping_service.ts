@@ -73,8 +73,15 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
         await getFoods(page, mealstr,foodTier.Condiment, toRet,menu);
         return toRet;
     }
+    /** TODO */
     async function hasMeal (daysAgo:number,mealstr:string):Promise<boolean> {
-        return true;
+        const connection = await getNewConnection();
+        let request = getRestaurantMealID(daysAgo,mealstr, connection);
+        request.on('error', function (err:any) {
+            throw err;
+        });
+        let rows1:any = await execSqlRequestDonePromise(request);
+        return !(!(rows1.length));
     }
     async function readMeal (daysAgo:number,mealstr:string):Promise<Food[]> {
         let toRet:Food[] = [];
@@ -282,8 +289,6 @@ console.log("rat meal: "+restaurantmealid);
         return toRet;
     }
     function getRestaurantMealID(day:number, meal:string, connection:any):any {
-        console.log("Dio: "+formattedDate(day));
-        console.log("Meal: "+meal);
         let sql = 'select RestaurantMealID from RestaurantMeal where meal = @meal AND day = @date';
         let request = new RequestM(sql, function (err:any, rowCount:any, rows:any) {
             if (err) {
@@ -497,17 +502,39 @@ console.log("rat meal: "+restaurantmealid);
         }
         return toRet;
     }
-    async function hasMealNames () {
-        throw "Implement me";
+    // Honestly, messing with sql isn't really worth for this one, I could just use jsons for each day...
+        // But then how would I delete things every week?
+            // Ez, use batch scripting
+    async function hasMealNames(daysAgo:number):Promise<boolean> { // will add restaurant
+        let filepath = "files/";
+        let filename = formattedDate(daysAgo)+"_mealnames";
+        return fs.existsSync(filepath+filename+".json");
     }
-    async function readMealNames () {
-        throw "Implement me";
-        
+    async function readMealNames(daysAgo:number):Promise<any> { // will add restaurant
+        // TODO
+            // Get all of the foods of the specified restaurant, day, and mealtype
+        let filepath = "files/";
+        let filename = formattedDate(daysAgo)+"_mealnames";
+        return JSON.parse(await fs.promises.readFile(filepath+filename+".json"));
     }
-    async function writeMealNames () {
-        throw "Implement me";
-        
+    async function writeMealNames(daysAgo:number,mealnames:string[]):Promise<any> {
+        let filepath = "files/";
+        let filename = formattedDate(daysAgo)+"_mealnames";
+        let dir_exists = fs.existsSync(filepath);
+        if (!dir_exists) { // If the directory already exists
+            await fs.promises.mkdir(filepath,{ recursive: true });
+        }
+        fs.writeFile(filepath+filename+".json", JSON.stringify(mealnames), function(err:any, buf:any ) {
+            if(err) {
+                console.log("error: ", err);
+            } else {
+                console.log("Meal names saved successfully!");
+            }
+        });
     }
+    // ScrapingService
+    // Only call if the meal is in the archive
+    // TODO, get rid of this as we SQL-ify, won't need to get everything so crudely every time
     //#endregion
     
     //#region ScrapingChecks
@@ -543,27 +570,6 @@ console.log("rat meal: "+restaurantmealid);
     //#endregion
     
     //#region Connectivity
-    // ScrapingService
-    // Returns if DB/file storage for having the value
-    async function inDatabase(daysAgo:number):Promise<boolean> {
-        // TODO Refactor to query the status table once it exists
-            // If it's anything but completed send back something verbose enough to indicate the loading progress
-            // The keys are restaurant, day, and mealtype
-        let filepath = "files/";
-        let filename = formattedDate(daysAgo)+"_dayinfo";
-        return fs.existsSync(filepath+filename+".json");
-    }
-    // ScrapingService
-    // Only call if the meal is in the archive
-    // TODO, get rid of this as we SQL-ify, won't need to get everything so crudely every time
-    async function outDatabase(daysAgo:number):Promise<any> {
-        // TODO 
-            // Get all of the foods of the specified restaurant, day, and mealtype
-        let filepath = "files/";
-        let filename = formattedDate(daysAgo)+"_dayinfo";
-        return await JSON.parse(await fs.promises.readFile(filepath+filename+".json"));
-    }
-
     async function getNewConnection():Promise<any> {
         var config = JSON.parse(fs.readFileSync("../Database/connectivity_config.json"));
         config.options.rowCollectionOnRequestCompletion = true;
@@ -620,4 +626,4 @@ console.log("rat meal: "+restaurantmealid);
     }    
     //#endregion
     
-    export {formattedDate,inDatabase,outDatabase,scrapingUp,writeArchive,getMealNames,hasMealNames,readMealNames,writeMealNames,getMeal,hasMeal,readMeal,writeMeal,connectPromise}
+    export {formattedDate,scrapingUp,writeArchive,getMealNames,hasMealNames,readMealNames,writeMealNames,getMeal,hasMeal,readMeal,writeMeal,connectPromise}

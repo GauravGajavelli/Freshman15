@@ -1,25 +1,17 @@
 USE [Freshman15]
 GO
 -- Call with all the different foods, looping through the dates and meal
-CREATE OR ALTER PROCEDURE deleteMealAndStatus (@restaurantmealid INT)
+CREATE OR ALTER PROCEDURE updateMealAndStatus (@restaurantmealid INT,@status VARCHAR(10))
 AS
 BEGIN
 BEGIN TRANSACTION
 
-DELETE FROM RestaurantMealLoadStatus WHERE RestaurantMealLoadStatusID=@restaurantmealid;
+UPDATE RestaurantMealLoadStatus SET [STATUS]=@status WHERE RestaurantMealLoadStatusID=@restaurantmealid;
 
 IF (@@ERROR <> 0)
 BEGIN
 ROLLBACK TRANSACTION;
 RETURN(1);
-END
-
-DELETE FROM RestaurantMeal WHERE RestaurantMealID=@restaurantmealid;
-
-IF (@@ERROR <> 0)
-BEGIN
-ROLLBACK TRANSACTION;
-RETURN(2);
 END
 
 COMMIT TRANSACTION

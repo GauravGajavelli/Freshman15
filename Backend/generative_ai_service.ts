@@ -5,7 +5,6 @@ var types = require('tedious').TYPES;
 var ConnectionM = require('tedious').Connection;
 var RequestM = require('tedious').Request;
 
-import { outDatabase } from "./scraping_service";
 import { formattedDate } from "./scraping_service";
 import { connectPromise } from "./scraping_service";
 import type { nutritionDetails } from "./constants_and_types";
