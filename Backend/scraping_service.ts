@@ -77,27 +77,19 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
         return true;
     }
     async function readMeal (daysAgo:number,mealstr:string):Promise<Food[]> {
-        var config = JSON.parse(fs.readFileSync("../Database/connectivity_config.json"));
-        config.options.rowCollectionOnRequestCompletion = true;
-        config.options.rowCollectionOnDone = true;
-
-        const connection = new ConnectionM(config);
-        let prom:Promise<any> = connectPromise(connection);
         let toRet:Food[] = [];
-        await prom;
+
+        const connection = await getNewConnection();
         let request = getRestaurantMealID(daysAgo,mealstr, connection);
         request.on('error', function (err:any) {
             throw err;
         });
-        let rows1:any = await requestDonePromise(request);
+        let rows1:any = await execSqlRequestDonePromise(request);
         let restaurantmealid:number = rows1[0][0].value; // first (and only) row, first (and only) column
-        console.log("restaurantmealid: "+restaurantmealid);
 
-        const connection2 = new ConnectionM(config);
-        let prom2:Promise<any> = connectPromise(connection2);
-        await prom2;
-        let request2 = readMealFromTable(restaurantmealid, connection);
-        let rows2:any = await requestDonePromise (request2);
+        const connection2 = await getNewConnection();
+        let request2 = readMealFromTable(restaurantmealid, connection2);
+        let rows2:any = await execSqlRequestDonePromise (request2);
         rows2.forEach((columns:any) => {
             let toPush:Food = 
             convertFromFoodSchema(columns,mealstr);
@@ -109,39 +101,29 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
         return toRet;
     }
     /** Write to RestaurantMeals and RestaurantMealsLoadStatus too */
-    function writeMeal (daysAgo:number,mealstr:string,foods:Food[]):Promise<any> {
-        var config = JSON.parse(fs.readFileSync("../Database/connectivity_config.json"));
-        const connection = new ConnectionM(config);
-        let prom:Promise<any> = connectPromise(connection);
-        prom.then(() => {
-            let request = insertMealAndStatus(daysAgo,mealstr, connection);
-            request.on('error', function (err:any) {
+    async function writeMeal (daysAgo:number,mealstr:string,foods:Food[]):Promise<any> {
+        let connection = await getNewConnection();
+
+        let request = insertMealAndStatus(daysAgo,mealstr, connection);
+        request.on('error', function (err:any) {
+            throw err;
+        });
+        let restaurantmealid:any = await callProcedureRequestOutputParamPromise (request);
+console.log("rat meal: "+restaurantmealid);
+        const connection2 = await getNewConnection();
+        bulkLoadFood(foods, restaurantmealid, connection2); // it's okay if we don't await this because for inserts we just gotta run this in the background
+                                                            // Also bulkload doesn't have any events
+        connection2.on('error', async function (err:any) {
+            // bulk load failed
+            if (err) {
+                // delete meal and mealstatus
+                const connection3 = await getNewConnection();
+                deleteMealAndStatus(restaurantmealid,connection3);
                 throw err;
-            });
-            request.on('returnValue', function(parameterName:any, value:any, metadata:any) {
-                // The 2nd circle of hell, I better watch out
-                let restaurantmealid:number = value;
-                const connection2 = new ConnectionM(config);
-                let prom2:Promise<any> = connectPromise(connection2);
-                prom2.then(() => {
-                    console.log("Ready to bulk");
-                    bulkLoadFood(foods, restaurantmealid, connection2);
-                    connection2.on('error', function (err:any) {
-                        // bulk load failed
-                        if (err) {
-                            // delete meal and mealstatus
-                            const connection3 = new ConnectionM(config);
-                            let prom3:Promise<any> = connectPromise(connection3);
-                            prom3.then(() => {
-                                deleteMealAndStatus(restaurantmealid,connection3);
-                            });
-                            throw err;
-                        }
-                    });
-                });
-            });
-        })
-        return prom;
+            }
+        });
+        
+        return true;
     }
     async function getMenu(page:any):Promise<string> {
         // await page.screenshot({path: 'files/screenshot1.png'});
@@ -311,26 +293,6 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
 
         request.addParameter('date', types.Date, new Date(formattedDate(day)));
         request.addParameter('meal', types.VarChar, meal);
-
-          // Emits a 'DoneInProc' event when completed.
-  request.on('row', (columns:any) => {
-    columns.forEach((column:any) => {
-      if (column.value === null) {
-        console.log('NULL');
-      } else {
-        console.log(column.value);
-      }
-    });
-  });
-
-  request.on('done', (rowCount:any) => {
-    console.log('Done got fired instead of doneInProc! I swear');
-  });
-
-  request.on('doneInProc', (rowCount:any, more:any, rows:any) => {
-    console.log(rowCount + ' rows returned from doneInProc');
-  });
-
 
         connection.execSql(request);
         return request;
@@ -601,6 +563,17 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
         let filename = formattedDate(daysAgo)+"_dayinfo";
         return await JSON.parse(await fs.promises.readFile(filepath+filename+".json"));
     }
+
+    async function getNewConnection():Promise<any> {
+        var config = JSON.parse(fs.readFileSync("../Database/connectivity_config.json"));
+        config.options.rowCollectionOnRequestCompletion = true;
+        config.options.rowCollectionOnDone = true;
+        let toRet = new ConnectionM(config);
+        let prom:Promise<any> = connectPromise(toRet);
+        await prom;
+        return toRet;
+    }
+
     const connectPromise = (connection:any) => {
         return new Promise((resolve, reject) => {
             connection.connect((err: any) => {
@@ -613,20 +586,38 @@ import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
             });
         });
     }
-    // Has both done and doneInProc to cover all of the bases
-    const requestDonePromise = (request:any) => {
+    // Has both done and doneProc to cover all of the bases
+    const execSqlRequestDonePromise = (request:any) => {
         return new Promise((resolve, reject) => {
+            // This literally does it for subparts of the sproc (which could obvi lead to weird stuff if intermediate steps (table valued variables) 
+                // are returned during a complex procedure)
+                // But this should be fine so long as it's used for execSql requests and not callProcedure or something
             request.on('doneInProc',function (rowCount:any, more:any, rows:any) {
                 console.log('Jared Dunn (In Proc)!');
                 resolve(rows);
             });
             request.on('done',function (rowCount:any, more:any, rows:any) {
-                console.log('Jared Dunn (NOT In Proc)!');
+                console.log('Jared Dunn (NOT Proc)!');
+                resolve(rows);
+            });
+            request.on('doneProc',function (rowCount:any, more:any, rows:any) {
+                console.log('Jared Dunn (Proc)!');
                 resolve(rows);
             });
         });
     }
-    
+
+    const callProcedureRequestOutputParamPromise = (request:any) => {
+        return new Promise((resolve, reject) => {
+            // This literally does it for subparts of the sproc (which could obvi lead to weird stuff if intermediate steps (table valued variables) 
+                // are returned during a complex procedure)
+                // But this should be fine so long as it's used for execSql requests and not callProcedure or something
+            request.on('returnValue', function(parameterName:any, value:any, metadata:any) {
+                console.log('SPROC Returned!');
+                resolve(value);
+            });
+        });
+    }    
     //#endregion
     
     export {formattedDate,inDatabase,outDatabase,scrapingUp,writeArchive,getMealNames,hasMealNames,readMealNames,writeMealNames,getMeal,hasMeal,readMeal,writeMeal,connectPromise}

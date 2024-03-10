@@ -75,4 +75,4 @@
         // If you got results depending on results, then that's that you need to trace execution and understand why it's speedrunning your code
             // A pattern I found useful is to do a promise on the done event instead of a callback for each of the individual rows
                 // With promises we want it to await the last possible thing so it skips none of the results. We need to have a reference to this thing in the code
-                    // This is not the row events themselves, but the done at the end (doneInProc?)
+                    // This is not the row events themselves, but the done at the end (doneProc, doneInProc, or done; somehow all three have a chance of returning the final tally of rows [first or at all])

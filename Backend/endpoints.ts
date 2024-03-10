@@ -116,21 +116,19 @@ router.get('/meal/:daysAgo/:mealstr', async function(req:any, res:any) { // Will
         return;
     }
     let toWrite:Food[] = [];
+    let writeSuccess:boolean = true;
     if (await scraping.hasMeal(daysAgo,mealstr)) {
-        let p = scraping.readMeal(daysAgo,mealstr);
-        p.then((toRet)=> {
-            console.log("ughhh");
-            res.send(toRet);
-        });
-        await p;
+        toWrite = await scraping.readMeal(daysAgo,mealstr);
     } else {
-        console.log("Hung up my gloves");
         toWrite = await scraping.getMeal(daysAgo,mealstr);
-        await scraping.writeMeal(daysAgo,mealstr,toWrite);
+        writeSuccess = await scraping.writeMeal(daysAgo,mealstr,toWrite);
     }
-
-    // res.send(toWrite);
-    //return;
+    if (writeSuccess) {
+        res.send(toWrite);
+    } else {
+        res.send("Failed to write meal!");
+    }
+    return;
 });
 /** TODO Implement, will get the state of the meal giving the FSM of the frontend loading the info it needs. Will query RestaurantMealStatus tables for this data */
 router.get('/meal_state/:daysAgo/:meal', async function(req:any, res:any) { // Will add restaurant
