@@ -113,7 +113,6 @@
     // Writes to RestaurantMeals and RestaurantMealsLoadStatus
     async function writeMeal (daysAgo:number,mealstr:string,foods:Food[]):Promise<any> {
         let connection = await getNewConnection(false,false);
-console.log("insertMealAndStatus: "+mealstr);
         let request = insertMealAndStatus(daysAgo,mealstr, connection);
         request.on('error', function (err:any) {
             throw err;
@@ -126,9 +125,6 @@ console.log("rat meal: "+restaurantmealid);
         connection2.on('error', async function (err:any) {
             // bulk load failed
             if (err) {
-                // delete meal and mealstatus
-                const connection3 = await getNewConnection(false,false);
-                deleteMealAndStatus(restaurantmealid,connection3);
                 throw err;
             }
         });
@@ -375,6 +371,11 @@ console.log("rat meal: "+restaurantmealid);
         const bulkLoad = connection.newBulkLoad('Food', options, function (error:any, rowCount:any) {
             console.log("error: "+error);
             console.log('inserted %d rows', rowCount);
+            if (error) {
+                console.log("We wanna be undoin den");
+                // delete meal and mealstatus
+                deleteMealAndStatus(restaurantmealid,connection);
+            }
         });
 
         // setup your columns - always indicate whether the column is nullable
