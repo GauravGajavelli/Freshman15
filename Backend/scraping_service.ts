@@ -20,7 +20,7 @@
     import {RestaurantMealsLoadStatus} from "./constants_and_types";
     import { convertToNutritioned } from './generative_ai_service';
     import { isRunnableFunctionWithParse } from 'openai/lib/RunnableFunction';
-    
+//#region Extension Functions
     // ScrapingService
     // Valid numbers of days ago: -1 < n <= whatever
     function bonSite(daysAgo:number):string {
@@ -53,7 +53,8 @@
         await page.goto(bonSite(daysAgo), { timeout: 30000 } );
         return page;
     }
-    
+    //#endregion
+
     //#region Meals
     // meals = ["breakfast", "lunch", "dinner"];
     // meals = ["brunch"];
@@ -109,7 +110,7 @@
             // So if we await that then we're good on everything in the thens
         return toRet;
     }
-    /** Write to RestaurantMeals and RestaurantMealsLoadStatus too */
+    // Writes to RestaurantMeals and RestaurantMealsLoadStatus
     async function writeMeal (daysAgo:number,mealstr:string,foods:Food[]):Promise<any> {
         let connection = await getNewConnection(false,false);
 
@@ -317,6 +318,21 @@ console.log("rat meal: "+restaurantmealid);
         connection.execSql(request);
         return request;
     }
+    function readMealStatusFromTable (restaurantmealid:number,connection:any):any {
+        let sql = 'select [status] from RestaurantMealLoadStatus where RestaurantMealLoadStatusID = @mealid';
+        let request = new RequestM(sql, function (err:any, rowCount:any, rows:any) {
+            if (err) {
+                throw err;
+            }
+        });
+
+        request.addParameter('mealid', types.Int, restaurantmealid);
+
+        connection.execSql(request);
+        return request;
+    }
+    /** TODO insert where all the null foods start appearing from*/
+        // first scrape or after gpt?
     // Returns id of meal created
     function insertMealAndStatus(day:number, meal:string, connection:any):any {
         const request = new RequestM('insertMealAndStatus', (err:any, rowCount:any) => {
@@ -339,7 +355,6 @@ console.log("rat meal: "+restaurantmealid);
 
         return request;
     }
-
     // Call upon failed bulk load
     function deleteMealAndStatus(restaurantmealid:number,connection:any) {
         const request = new RequestM('deleteMealAndStatus', (err:any, rowCount:any) => {
@@ -382,7 +397,6 @@ console.log("rat meal: "+restaurantmealid);
         // execute
         connection.execBulkLoad(bulkLoad, convertToFoodSchema(foods,restaurantmealid));
     }
-    
     function convertToFoodSchema(food:Food[],restaurantmealid:number):any {
         // change to checking <1 and null explicitly separately
         // TODO, use this, seems like my exact use case: https://tediousjs.github.io/tedious/bulk-load.html
@@ -411,7 +425,6 @@ console.log("rat meal: "+restaurantmealid);
         }
         return toRet;
     }
-
     function convertFromFoodSchema(row:any,mealstr:string):Food {
             let id = 0;
             let name = "";
@@ -490,6 +503,24 @@ console.log("rat meal: "+restaurantmealid);
     }
     //#endregion
     
+    //#region MealStatus
+    async function readMealStatus(daysAgo:number,mealstr:string):Promise<string> {
+        const connection = await getNewConnection(false,true);
+        let request = getRestaurantMealID(daysAgo,mealstr, connection);
+        request.on('error', function (err:any) {
+            throw err;
+        });
+        let rows1:any = await execSqlRequestDonePromise(request);
+        let restaurantmealid:number = rows1[0][0].value; // first (and only) row, first (and only) column
+
+        const connection2 = await getNewConnection(false,true);
+        let request2 = readMealStatusFromTable(restaurantmealid, connection2);
+        let rows2:any = await execSqlRequestDonePromise (request2);
+        let toRet:string = rows2[0][0].value; // first (and only) row, first (and only) column
+        return toRet;
+    }
+    //#endregion
+
     //#region MealNames
     async function getMealNames(daysAgo:number):Promise<string[]>{ // will add restaurant
         // document.querySelectorAll(".panel.s-wrapper.site-panel--daypart")[1].id
@@ -628,4 +659,4 @@ console.log("rat meal: "+restaurantmealid);
     }    
     //#endregion
     
-    export {formattedDate,scrapingUp,writeArchive,getMealNames,hasMealNames,readMealNames,writeMealNames,getMeal,hasMeal,readMeal,writeMeal,getNewConnection,getRestaurantMealID,execSqlRequestDonePromise,booleanToBit}
+    export {formattedDate,scrapingUp,writeArchive,getMealNames,hasMealNames,readMealNames,writeMealNames,getMeal,hasMeal,readMeal,writeMeal,getNewConnection,getRestaurantMealID,execSqlRequestDonePromise,booleanToBit,readMealStatus}

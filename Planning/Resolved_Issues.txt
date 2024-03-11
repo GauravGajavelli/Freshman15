@@ -80,3 +80,5 @@
         // Use try catches around all endpoints, sending back a 500 internal server error
     // Keep getting undefined while iterating through keys?
         // Iterating through Object.keys() returns indices, you still need to index in afterwards
+    // After using case statements thong that weren't null now are?
+        // Before closing the case expression with end, the optional else clause can be used. The <result> of else is used if no <condition> is true.1 If else is omitted, else null is implicit.2

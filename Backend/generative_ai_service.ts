@@ -163,7 +163,7 @@ function updateMealStatusFromTable (restaurantmealid:number,status:RestaurantMea
 
 function updateMealFromTable (foods:Food[],restaurantmealid:number,connection:any):any {
     let sql = generateUpdateQueryString(foods,restaurantmealid);
-    console.log(sql);
+    // console.log(sql);
     let request = new RequestM(sql, function (err:any, rowCount:any, rows:any) {
         if (err) {
             throw err;
@@ -173,22 +173,10 @@ function updateMealFromTable (foods:Food[],restaurantmealid:number,connection:an
     connection.execSql(request);
     return request;
 }
-/*
-UPDATE orders 
-SET manager_id = (
-CASE id
-WHEN 1 THEN 21
-WHEN 2 THEN 22
-END
-)
-SET courier_id = (
-CASE id
-WHEN 1 THEN 301
-WHEN 2 THEN 302
-END
-)
-WHERE id IN (1,2)
-*/
+
+// https://dba.stackexchange.com/questions/232887/where-in-query-to-very-large-table-is-slow
+    // Concatenated indices can speed this up if it ends up too slow
+        // First convert the IN to this form though
 function generateUpdateQueryString(foods:Food[],restaurantmealid:number) {
     let toRet:string = ""; // apparently js uses ropes; building strings like this ain't too bad
     let queryObject:any = {
@@ -198,8 +186,8 @@ function generateUpdateQueryString(foods:Food[],restaurantmealid:number) {
         'Fat':"",
         'ServingSize':"",
         'ServingUnits':"",
-        'Nutritionless':"",
-        'ArtificialNutrition':""
+        'ArtificialNutrition':"",
+        'Nutritionless':""
     };
     let keys = Object.keys(queryObject);
     for (let key in keys) {
@@ -213,7 +201,7 @@ function generateUpdateQueryString(foods:Food[],restaurantmealid:number) {
     }
     for (let key in keys) {
         toRet += queryObject[keys[key]];
-        toRet += `END\nWHERE RestaurantMealID = ${restaurantmealid}\n`;
+        toRet += `END\nWHERE RestaurantMealID = ${restaurantmealid} AND Nutritionless = 1\n`;
     }
     return toRet;
     // Steps
@@ -280,6 +268,8 @@ Approach to crash handling in the process:
 
 export {getNutritionless,convertToNutritioned,updateMeal};
 
+// https://use-the-index-luke.com/sql/where-clause#:~:text=Although%20the%20where%20clause%20has,ingredient%20of%20a%20slow%20query.
+    // How to use indices for speed; but is it even worth using an index on the boolean statement Nutritionless
 /*
 53% of consumers will click away from a page that takes more than 3 seconds to load
 Consider using Pagination (https://nordicapis.com/everything-you-need-to-know-about-api-pagination/) and optimize the api response package (https://nordicapis.com/optimizing-the-api-response-package/)

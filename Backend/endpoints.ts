@@ -23,6 +23,7 @@ import * as gen_ai from './generative_ai_service';
 // import * as meals from './meal_service';
 import type { FoodSquare } from "./constants_and_types";
 import type { Food } from './constants_and_types';
+import { RestaurantMealsLoadStatus } from "./constants_and_types";
 
 // TODO, get rid of the usage of outDatabase and inDatabase this as we SQL-ify, won't need to get everything so crudely every time
     // Plus every service will own some sql stuff (replacing all file stuff), that will be more efficient to move around than all the data at once
@@ -135,28 +136,27 @@ router.get('/meal/:daysAgo/:mealstr', async function(req:any, res:any) { // Will
         res.status(500).send('500 Internal Server Error');
     };
 });
-/** TODO Implement, will get the state of the meal giving the FSM of the frontend loading the info it needs. Will query RestaurantMealStatus tables for this data */
+// Will get the state of the meal giving the FSM of the frontend loading the info it needs
     // check has meal, otherwise put unscraped
     // Get the meal status otherwise
-router.get('/meal_status/:daysAgo/:meal', async function(req:any, res:any) { // Will add restaurant
+router.get('/meal_status/:daysAgo/:mealstr', async function(req:any, res:any) { // Will add restaurant
     let daysAgo:number = req.params.daysAgo;
     if (daysAgo < -1) {
         res.send("Invalid day: "+daysAgo);
         return;
     }
-    let toWrite:any = [];
+    let mealstr:string = req.params.mealstr;
+    if (mealstr == "") {
+        res.send("Empty meal string: "+mealstr);
+        return;
+    }
     try {
-    // if (await scraping.inDatabase
-    //     (daysAgo)) {
-    //     toWrite = await scraping.outDatabase(daysAgo);
-    //     // scraping.newWriteDayData(daysAgo,toWrite);
-    // } else {
-    //     console.log("Hung up my gloves");
-    //     toWrite = await scraping.getMenusAndMeals(daysAgo);
-    //     await scraping.newWriteDayData(daysAgo,toWrite);
-    // }
-
-    res.send(toWrite);
+        // query RestaurantMealStatus tables for this data
+        if (await scraping.hasMeal(daysAgo,mealstr)) {
+            res.send(await scraping.readMealStatus(daysAgo,mealstr));
+        } else {
+            res.send(RestaurantMealsLoadStatus[RestaurantMealsLoadStatus.Unscraped]);
+        }
     } catch (error) {
         res.status(500).send('500 Internal Server Error');
     };
