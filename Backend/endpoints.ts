@@ -187,14 +187,18 @@ router.put('/generate_artificial_data/:daysAgo/:mealstr',async function(req:any,
     }
     try {
         if (await scraping.hasMeal(daysAgo,mealstr)) {
-            let foods:Food[] = await scraping.readMeal(daysAgo,mealstr);
-            let nutritionlesses:Food[] = gen_ai.getNutritionless(daysAgo,foods);
-            await gen_ai.convertToNutritioned(nutritionlesses);
-            let success = await gen_ai.updateMeal(nutritionlesses,daysAgo,mealstr);
-            if (success) {
-                res.send(nutritionlesses);
+            if (await scraping.readMealStatus(daysAgo,mealstr) != RestaurantMealsLoadStatus[RestaurantMealsLoadStatus.Generated]) {
+                let foods:Food[] = await scraping.readMeal(daysAgo,mealstr);
+                let nutritionlesses:Food[] = gen_ai.getNutritionless(daysAgo,foods);
+                await gen_ai.convertToNutritioned(nutritionlesses);
+                let success = await gen_ai.updateMeal(nutritionlesses,daysAgo,mealstr);
+                if (success) {
+                    res.send(nutritionlesses);
+                } else {
+                    res.send("Failed to generate artificial nutrition");
+                }
             } else {
-                res.send("Failed to generate artificial nutrition");
+                res.send("Nutrition has already been generated");
             }
         } else {
             res.send("Don't have the meal yet");

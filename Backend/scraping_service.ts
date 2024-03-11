@@ -113,7 +113,7 @@
     // Writes to RestaurantMeals and RestaurantMealsLoadStatus
     async function writeMeal (daysAgo:number,mealstr:string,foods:Food[]):Promise<any> {
         let connection = await getNewConnection(false,false);
-
+console.log("insertMealAndStatus: "+mealstr);
         let request = insertMealAndStatus(daysAgo,mealstr, connection);
         request.on('error', function (err:any) {
             throw err;
@@ -342,7 +342,7 @@ console.log("rat meal: "+restaurantmealid);
             }
             connection.close();
         });
-    
+        console.log("goethe");    
         // insertMealAndStatus (@day Date, @meal varchar(10))
     
         request.addParameter('day', types.Date, new Date(formattedDate(day)));
@@ -406,14 +406,14 @@ console.log("rat meal: "+restaurantmealid);
             toRet.push(
                 {
                     ID:f.id,
-                    Name:f.label,
+                    Name:f.label.substring(0,50),
                     Calories:floatFormat(f.nutrition_details.calories.value),
                     Carbohydrates:floatFormat(f.nutrition_details.carbohydrateContent.value),
                     Protein:floatFormat(f.nutrition_details.proteinContent.value),
                     Fat: floatFormat(f.nutrition_details.fatContent.value),
                     Tier:f.tier,
                     ServingSize:floatFormat(f.nutrition_details.servingSize.value),
-                    ServingUnits:f.nutrition_details.servingSize.unit?f.nutrition_details.servingSize.unit:null,
+                    ServingUnits:f.nutrition_details.servingSize.unit?f.nutrition_details.servingSize.unit.substring(0,50):null,
                     Nutritionless:booleanToBit(f.nutritionless),
                     Vegetarian:booleanToBit(f.vegetarian),
                     Vegan:booleanToBit(f.vegan),

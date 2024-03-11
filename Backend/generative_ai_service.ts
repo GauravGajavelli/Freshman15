@@ -25,7 +25,7 @@ function getNutritionless(daysAgo:number, foods:Food[]):Food[] {
 }
 // GenerativeAIService
 // Turns chatgpt json into nutrition_details
-async function artificialToNatural(artificial:any):Promise<nutritionDetails> {
+function artificialToNatural(artificial:any):nutritionDetails {
     /* GPT 3.5 Turbo Output
 {
   "Energy_kcal": "350",
@@ -35,7 +35,7 @@ async function artificialToNatural(artificial:any):Promise<nutritionDetails> {
   "Serving_size_oz": "6"
 }
      */
-    let parsed:any = await JSON.parse(artificial);
+    let parsed:any = JSON.parse(artificial);
     let keys:string[] = Object.keys(parsed); // the ordering is fixed (per observation), even if the names change
     // console.log(artificial);
     // console.log("Calories?: "+artificial[keys[0]]);
@@ -78,20 +78,29 @@ async function artificialToNatural(artificial:any):Promise<nutritionDetails> {
 }
 // GenerativeAIService
 // modifies with nutrition details
-async function convertToNutritioned(nutritionlesses:any):Promise<void> {
+async function convertToNutritioned(nutritionlesses:any):Promise<any> {
     // let count:number = 0;
+    let promArr:Promise<any>[]=[];
+    let promArr2:Promise<any>[]=[];
+    
     for (let i in nutritionlesses) {
         // if ( count == 5) {
         //     break;
         // }
         let ns = nutritionlesses[i];
-        let newtrition = await getArtificialNutrition(ns["label"]);
-        ns["nutrition_details"] = await artificialToNatural(newtrition);
-        ns.nutritionless = false;
-        ns.artificial_nutrition = true;
-        console.log("Converted: "+ns["label"]);
-        // count++;
+        let newtrition = getArtificialNutrition(ns["label"]);
+        let toAdd = newtrition.then((completion) => {
+            let newtrition = completion.choices[0].message.content;
+            ns["nutrition_details"] = artificialToNatural(newtrition);
+            ns.nutritionless = false;
+            ns.artificial_nutrition = true;
+            console.log("Converted: "+ns["label"]);
+        });
+        promArr.push(newtrition);
+        promArr2.push(toAdd);
     }
+    await Promise.all(promArr);
+    return Promise.all(promArr2);
 }
 // GenerativeAIService
 async function getArtificialNutrition(name:string):Promise<any> {
@@ -104,7 +113,7 @@ async function getArtificialNutrition(name:string):Promise<any> {
         response_format: { type: "json_object" },
       });
 
-      return completion.choices[0].message.content;
+      return completion;
 }
 // Uses this method: https://catcherholms.medium.com/easy-and-optimized-way-for-batch-bulk-update-sql-records-with-different-unique-values-and-columns-81414419d675
     // for bulk update. Put some thought into the options of adding another table for artificial data, using repeated single update, etc.
@@ -163,7 +172,7 @@ function updateMealStatusFromTable (restaurantmealid:number,status:RestaurantMea
 
 function updateMealFromTable (foods:Food[],restaurantmealid:number,connection:any):any {
     let sql = generateUpdateQueryString(foods,restaurantmealid);
-    // console.log(sql);
+    console.log(sql);
     let request = new RequestM(sql, function (err:any, rowCount:any, rows:any) {
         if (err) {
             throw err;

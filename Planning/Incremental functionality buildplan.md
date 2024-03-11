@@ -63,6 +63,11 @@ Current Epic: Lazy Loading
   4. Specific meal getting
    (honestly if I'm switching to eager, should I bother with the last two? If lazy is fast enough ig?)
   5. Backend pinging for load
+   a. I can make lazy super fast with async stuff and Promise.all I think, I should go through and refactor the code
+   b. Why is the dinner meal not saving in the DB after being scraped?
+      a. Because one of the names are of a length greater than 50
+   c. Really just have to refactor the web scraping stuff
+    a. I already got the openai stuff more speedy, but the initial scraping of the page is a little slow
   6. Non-interactive screen/loading bar
 
 =======================================================================================================================================================================
