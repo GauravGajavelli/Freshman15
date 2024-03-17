@@ -50,10 +50,47 @@ Incremental functionality buildplan (talk abt this since I'm having to do this a
 - A big thing I learned with this project is how to take a raw idea with its appeal, into chunks, and then chunk those chunks, and then split those into doable segments
   - Splitting into epics and tickets from a disarrayed list of features
     - Writing out everything beforehand starting each Epic, and writing each Epic contained within new stories
+    - A feature is an epic by default; only gets downgraded to a ticket is it really is that small
 
 =======================================================================================================================================================================
 
-Current Epic: Lazy Loading
+Current Epic: Adding Restaurant to Scraping
+- Create a restaurants table
+- Update schema
+- Update corresponding existing functions to accomodate restaurants but do nothing with it
+- Scraping for all restaurant urls
+  - Go to that central bonappetit site and get the lists from the dropdowns for certain keywords (university and college)
+    - https://www.cafebonappetit.com/
+    - subdomains and brute forcing the api too hard; just do this for simplicity
+      - Add your own url might be cool, just link theirs and as to paste, then grab subdomain
+- Update frontend to use url params
+- Update frontend to use restaurant option
+
+=======================================================================================================================================================================
+
+Future Epics (and any specific tickets): 
+- Bootstrapify All
+  1. Get frontend working with new api
+  2. Create all final frintend files
+  3. Add bootstrap to them
+- Signup
+  - Use eager caching and gpt-ing for all users to get load time down to 3 seconds; consequently users may yyhave to wait a few minutes for their account to be set up or for new restaurant meals to be set up (have the status show on their profile page)
+    - We'll sustain this for our first couple hundred users, shouldn't be something I'm not willing to burn cash for
+    - It's like Ben Keller said, I need to get it in front of people and get feedback
+      - It needs to be at its best in order to get feedback on what really matters: the featureset
+  - Users can only use restaurant data that are part of their three restaurants
+    - A hash made authorizing their use of the "{site}/{restaurant}" path will be a url parameter and in a user auth table of userrestaurants that allows them to access thise restaurants
+- DeleteOldData
+  1. Mark tables that are related to scraping with the date they were scraped on
+  2. Create a SPROC that deletes all records from the tables with a provided date a week before today
+     a. User created data shouldn't be though
+  3. Get a nightly routine to call it
+  4. Refresh restaurant table nightly to prevent stale urls
+
+=======================================================================================================================================================================
+
+Past Epics: 
+- Lazy Loading Backend (Really SQL-ify backend)
 - Tickets
   1. Create loading into Meal/Load Status Tables
   2. Scrape specific meals
@@ -62,36 +99,4 @@ Current Epic: Lazy Loading
      b. No Meal doesn't really make sense; then it just shouldn't be in the db
   4. Specific meal getting
    (honestly if I'm switching to eager, should I bother with the last two? If lazy is fast enough ig?)
-  5. Backend pinging for load
-   a. I can make lazy super fast with async stuff and Promise.all I think, I should go through and refactor the code
-      a. Actually this makes it slower for the web scraper for meal get
-      b. Improvements: only getting the most necessary foods
-   b. Why is the dinner meal not saving in the DB after being scraped?
-      a. Because one of the names are of a length greater than 50
-   c. Really just have to refactor the web scraping stuff
-    a. I already got the openai stuff more speedy, but the initial scraping of the page is a little slow
-  6. Non-interactive screen/loading bar
-
-=======================================================================================================================================================================
-
-Future Epics (and any specific tickets): 
-- Adding restaurant
-  - Add eager caching to get load time down to 3 seconds
-    - We'll sustain this for our first couple hundred users, shouldn't be something I'm not willing to burn cash for
-- Signup
-- Bootstrapify All
-  1. Create all final frintend files
-  2. Add bootstrap to them
-  3. Draw out FSM of the loading process from what state the page is and what the load status is
-     a. This can be used to more easily structure what users can see based on state; use like an enum to encode
-     b. Thus is a thing: https://www.google.com/search?q=ui+finite+state+machine&oq=ui+finite+state+machine&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBCDQyNzhqMGoxqAIAsAIA&sourceid=chrome&ie=UTF-8
-- DeleteOldData
-  1. Mark tables that are related to scraping with the date they were scraped on
-  2. Create a SPROC that deletes all records from the tables with a provided date a week before today
-     a. User created data shouldn't be though
-  3. Get a nightly routine to call it
-
-=======================================================================================================================================================================
-
-Past Epics: 
-- 
+  5. GPT-ify meal

@@ -24,7 +24,7 @@
     // ScrapingService
     // Valid numbers of days ago: -1 < n <= whatever
     function bonSite(daysAgo:number):string {
-        return 'https://rose-hulman.cafebonappetit.com/cafe/'+(daysAgo!=0?formattedDate(daysAgo):'');
+        return 'https://rose-hulman.cafebonappetit.com/cafe/cafe/'+(daysAgo!=0?formattedDate(daysAgo):'');
     }
     // ScrapingService
     function formattedDate (daysAgo:number):string {
