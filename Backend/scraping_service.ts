@@ -49,8 +49,21 @@
     // Returns an object with the menu with strings from the site daysAgo number of days ago
     async function getPage(daysAgo:number) {
         const browser = await puppeteer.launch({headless: "new"});
-        const page = await browser.newPage();
-        await page.goto(bonSite(daysAgo), { timeout: 30000 } );
+        const options = {
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',
+                '--disable-gpu'
+            ],
+            headless: true
+        }  
+        const page = await browser.newPage(options);
+        await page.goto(bonSite(daysAgo), { waituntil: "load" } );
         return page;
     }
     //#endregion

@@ -1,0 +1,2 @@
+Just Stack Overflow links to cool stuff learned along the way, most of which is related to the project: 
+- https://www.brentozar.com/archive/2023/02/can-you-nest-transactions-in-sql-server/

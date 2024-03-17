@@ -64,6 +64,8 @@ Current Epic: Lazy Loading
    (honestly if I'm switching to eager, should I bother with the last two? If lazy is fast enough ig?)
   5. Backend pinging for load
    a. I can make lazy super fast with async stuff and Promise.all I think, I should go through and refactor the code
+      a. Actually this makes it slower for the web scraper for meal get
+      b. Improvements: only getting the most necessary foods
    b. Why is the dinner meal not saving in the DB after being scraped?
       a. Because one of the names are of a length greater than 50
    c. Really just have to refactor the web scraping stuff
@@ -73,6 +75,9 @@ Current Epic: Lazy Loading
 =======================================================================================================================================================================
 
 Future Epics (and any specific tickets): 
+- Adding restaurant
+  - Add eager caching to get load time down to 3 seconds
+    - We'll sustain this for our first couple hundred users, shouldn't be something I'm not willing to burn cash for
 - Signup
 - Bootstrapify All
   1. Create all final frintend files

@@ -9,7 +9,7 @@ import { getNewConnection } from "./scraping_service";
 import { getRestaurantMealID } from "./scraping_service";
 import { execSqlRequestDonePromise } from "./scraping_service";
 import { booleanToBit } from "./scraping_service";
-import { RestaurantMealsLoadStatus, type nutritionDetails } from "./constants_and_types";
+import { RestaurantMealsLoadStatus, foodTier, type nutritionDetails } from "./constants_and_types";
 import type { Food } from "./constants_and_types";
 
 // GenerativeAIService
@@ -17,7 +17,7 @@ import type { Food } from "./constants_and_types";
 function getNutritionless(daysAgo:number, foods:Food[]):Food[] {
     let toRet:Food[] = [];
     for (let i = 0; i < foods.length; i++) {
-        if (foods[i].nutritionless) {
+        if (foods[i].nutritionless /**&& foods[i].tier == foodTier.Special*/) {
             toRet.push(foods[i]);
         }
     }

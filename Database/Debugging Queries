@@ -1,0 +1,10 @@
+select * FROM Food
+
+select * from RestaurantMeal
+select * from RestaurantMealLoadStatus
+delete from RestaurantMealLoadStatus
+delete from RestaurantMeal
+delete from Food
+--delete from Food where restaurantmealid = 4
+
+--sp_help food
