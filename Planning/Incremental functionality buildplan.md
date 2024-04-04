@@ -80,6 +80,8 @@ Future Epics (and any specific tickets):
       - It needs to be at its best in order to get feedback on what really matters: the featureset
   - Users can only use restaurant data that are part of their three restaurants
     - A hash made authorizing their use of the "{site}/{restaurant}" path will be a url parameter and in a user auth table of userrestaurants that allows them to access thise restaurants
+  - Use Google OAuth 2.0
+    - Store the API token in the header of the request, the same way as in LCS
 - DeleteOldData
   1. Mark tables that are related to scraping with the date they were scraped on
   2. Create a SPROC that deletes all records from the tables with a provided date a week before today

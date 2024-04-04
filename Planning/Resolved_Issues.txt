@@ -82,3 +82,5 @@
         // Iterating through Object.keys() returns indices, you still need to index in afterwards
     // After using case statements thong that weren't null now are?
         // Before closing the case expression with end, the optional else clause can be used. The <result> of else is used if no <condition> is true.1 If else is omitted, else null is implicit.2
+    // Decimal in sproc always rounds (in sql even)
+        // Convert it to float, that worked before
